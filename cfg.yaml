@@ -1,0 +1,41 @@
+enable: true
+rules:
+#example
+- interceptor:
+    headerKey: "key"
+    urlRegexp: "myStore.*trolley"
+  actions:
+    responseFromFile: "path/overrides.json"
+    statusCode: "500"
+    addHeader:
+      - key: "<key>"
+        value: "<value>"
+    modifyHeader:
+      - key: "<key>"
+        value: "<value>"
+  active: false
+#without address   
+- interceptor:
+    headerKey: "key"
+    urlRegexp: "waitrose.*addresses"
+  actions:
+    responseFromFile: "/Users/esteves/MITM/mitmMapLocal/withoutAdrees.json"
+  active: false
+#orders
+- interceptor:
+    urlRegexp: "waitrose.*orders$"
+  actions:
+    responseFromFile: "/Users/esteves/MITM/mitmMapLocal/orders.json"
+  active: false
+#order
+- interceptor:
+    urlRegexp: "waitrose.*orders/\\d*$"
+  actions:
+    responseFromFile: "/Users/esteves/MITM/mitmMapLocal/order.json"
+  active: false
+#troley com produtos entertaining
+- interceptor:
+    urlRegexp: "waitrose.*trolley"
+  actions:
+    responseFromFile: "/Users/esteves/MITM/mitmMapLocal/trolley_entertaining.json"
+  active: false
