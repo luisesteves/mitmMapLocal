@@ -1,0 +1,63 @@
+version: 1
+enable: true
+mock_directory: "/Users/user/PROXY"
+
+auto_save: 
+  - rule:
+    url_regexp: "poo\\.com/api/offers-\\D{2,4}/v\\d/offers\\?offerType=MEAL_DEAL"
+    path: "/offers/offers/"
+
+rules:
+#example
+- interceptor:
+    url_regexp: ".*poo.*/api/favourites2-.*/v\n/favourites"
+    header_key: "allow"
+    body_regexp: "regrex"
+    method: "POST"
+
+  actions:
+    request:
+      delay: 5
+      add_query_parameter:
+        - key: "<key>"
+          value: "<value>"
+      remove_query_parameter:
+        - key: "<key>"
+      change_query_parameter:
+        - key: "<key>"
+          value: "<value>"
+      replace_url_component:
+        - old_value: "<key>"
+          new_value: "<value>" 
+      replace_body_component:
+        - key: "<key>"
+          value: "<value>" 
+      replace_body: "{}"
+      add_header:
+        - key: "<key>"
+          value: "<value>"
+      save:
+        - "header"
+        - "cookie"
+    response:
+      file: "favourites/favourites.json"
+      file_sequence: ["FileA", "FileB", "FileC"]
+      add_header:
+        - key: "<key>"
+          value: "<value>"
+      remove_header: "<key>"
+      change_header_key:
+        - key: "<key>"
+          new_key: "<value>"
+      body: "{}"
+      delay: 5
+      status_code: 200
+      replace:
+        replace: "regex"
+        replacement: "string"
+      save:
+        - "header"
+        - "cookie"
+      search: "regex"
+  marker: "https://api.github.com/emojis"
+  # active: true
