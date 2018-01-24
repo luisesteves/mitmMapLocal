@@ -1,0 +1,21 @@
+{
+  "addressesInfo": {
+    "customerId": "1143842",
+    "addresses": [
+      {
+        "addressId": "26972457",
+        "nickname": "Billing Address x",
+        "title": "luis",
+        "firstName": "esree",
+        "lastName": "das",
+        "telephone1": "965180655",
+        "addressLine1": "1",
+        "addressLine2": "The Robins",
+        "city": "BRACKNELL",
+        "county": "Berks",
+        "postcode": "RG12 8BU",
+        "primary": true
+      }
+    ]
+  }
+}
