@@ -6,7 +6,7 @@ rules:
     urlRegexp: "myStore.*trolley"
   actions:
     responseFromFile: "path/overrides.json"
-    statusCode: "500"
+    statusCode: 500
     addHeader:
       - key: "<key>"
         value: "<value>"

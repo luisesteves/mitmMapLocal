@@ -65,6 +65,7 @@ class MockResponse:
                     ctx.log.info("modify reponse from file: " + actions["responseFromFile"])
                     flow.response.content = str.encode(readFile(actions["responseFromFile"]))
                 if "statusCode" in actions:
+                    ctx.log.info("modify reponse code")
                     flow.response.status_code = actions["statusCode"]
     
             intercepted = False

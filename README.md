@@ -9,3 +9,6 @@ This allows to reply a response locally
 pip install pyyaml
 
 
+## how to start
+* mitmproxy -s mloc.py
+* mitmproxy --insecure -s mloc.py
