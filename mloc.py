@@ -2,8 +2,9 @@ import re
 import json
 from mitmproxy import ctx, http
 import yaml
+import os
 
-reload = 3
+reload = 12
 
 class MockResponse:
     def __init__(self):
@@ -18,16 +19,18 @@ class MockResponse:
         self.mockCfg = readConfiguration()
     
     def response(self, flow):
-        def readFile(fileLoc):
+        def readFile(filename):
             data = ""
             try:
-                data = open(fileLoc).read()
+                absPath = os.path.abspath("./mockdata/" + filename)
+                ctx.log.info("modify reponse from file: " + absPath)
+                data = open(absPath).read()
             except IOError:
                 data = "{file could not be found}"
             return data
 
         if not self.mockCfg["enable"]:
-            ctx.log.info("mock disabled")
+            ctx.log.info("mock enable")
             return
 
         intercepted = False
@@ -62,7 +65,6 @@ class MockResponse:
                 ctx.log.info("change response")
                 flow.request.headers["intercepted"] = "true"
                 if "responseFromFile" in actions:
-                    ctx.log.info("modify reponse from file: " + actions["responseFromFile"])
                     flow.response.content = str.encode(readFile(actions["responseFromFile"]))
                 if "statusCode" in actions:
                     ctx.log.info("modify reponse code")

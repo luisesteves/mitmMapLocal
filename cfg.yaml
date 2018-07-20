@@ -19,23 +19,23 @@ rules:
     headerKey: "key"
     urlRegexp: "waitrose.*addresses"
   actions:
-    responseFromFile: "/Users/esteves/MITM/mitmMapLocal/withoutAdrees.json"
+    responseFromFile: "withoutAdrees.json"
   active: false
 #orders
 - interceptor:
     urlRegexp: "waitrose.*orders$"
   actions:
-    responseFromFile: "/Users/esteves/MITM/mitmMapLocal/orders.json"
+    responseFromFile: "orders.json"
   active: false
 #order
 - interceptor:
     urlRegexp: "waitrose.*orders/\\d*$"
   actions:
-    responseFromFile: "/Users/esteves/MITM/mitmMapLocal/order.json"
+    responseFromFile: "order.json"
   active: false
 #troley com produtos entertaining
 - interceptor:
     urlRegexp: "waitrose.*trolley"
   actions:
-    responseFromFile: "/Users/esteves/MITM/mitmMapLocal/trolley_entertaining.json"
+    responseFromFile: "trolley_entertaining.json"
   active: false
