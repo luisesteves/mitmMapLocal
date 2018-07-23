@@ -69,7 +69,10 @@ class MockResponse:
                 if "statusCode" in actions:
                     ctx.log.info("modify reponse code")
                     flow.response.status_code = actions["statusCode"]
-    
+                if "addHeader" in actions:
+                    for header in actions["addHeader"]:
+                        ctx.log.info("add header")
+                        flow.response.headers[header["key"]] = header["value"]
             intercepted = False
 
 def start():
