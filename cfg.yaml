@@ -2,40 +2,70 @@ enable: true
 rules:
 #example
 - interceptor:
-    headerKey: "key"
-    urlRegexp: "myStore.*trolley"
+    urlRegexp: ".*waitrose.*/api/favourites2-.*/v\n/favourites"
   actions:
-    responseFromFile: "path/overrides.json"
-    statusCode: 500
-    addHeader:
-      - key: "<key>"
-        value: "<value>"
-    modifyHeader:
-      - key: "<key>"
-        value: "<value>"
+    responseFromFile: "favourites/favourites.json"
+    responseFromFiles: ["FicheiroA", "ficheirob", "C"]
   active: false
-#without address   
+
+#vouchers wallet
 - interceptor:
-    headerKey: "key"
-    urlRegexp: "waitrose.*addresses"
+    urlRegexp: ".*waitrose.*incentive-offers"
+    method: "GET"
+    signal: "start"
   actions:
-    responseFromFile: "withoutAdrees.json"
-  active: false
-#orders
+    responseFromFile: "Vouchers/incentive-offer-qa/live.json"
+    statusCode: 200
+  active: true
+
 - interceptor:
-    urlRegexp: "waitrose.*orders$"
+    urlRegexp: ".*waitrose.*incentive-offers"
+    method: "POST"
   actions:
-    responseFromFile: "orders.json"
-  active: false
-#order
+    responseFromFile: "Vouchers/incentive-offer-qa/POST/post.json"
+    statusCode: 200
+    signal: "post"
+  active: true
+
 - interceptor:
-    urlRegexp: "waitrose.*orders/\\d*$"
+    urlRegexp: ".*waitrose.*incentive-offers"
+    method: "GET"
+    signal: "post"
   actions:
-    responseFromFile: "order.json"
-  active: false
-#troley com produtos entertaining
+    responseFromFile: "Vouchers/incentive-offer-qa/live-after-post.json"
+    statusCode: 200
+  active: true
+
+
+#Choose vouchers
 - interceptor:
-    urlRegexp: "waitrose.*trolley"
+    urlRegexp: ".*waitrose.*mywaitrose-rewards"
+    signal: "start"
   actions:
-    responseFromFile: "trolley_entertaining.json"
-  active: false
+    responseFromFile: "Vouchers/mywaitrose-rewards/v2/live.json"
+    statusCode: 200
+  active: true
+
+- interceptor:
+    urlRegexp: ".*waitrose.*mywaitrose-rewards"
+    signal: "post"
+  actions:
+    responseFromFile: "Vouchers/mywaitrose-rewards/v2/live-after-post.json"
+    statusCode: 200
+    signal: "start"
+  active: true
+
+#content
+- interceptor:
+    urlRegexp: ".*waitrose.com/api/content-.*/content/waitrosegroceriescms/waitrose-app/homescreen"
+  actions:
+    responseFromFile: "content/waitrosegroceriescms/waitrose-app/homescreen/meal-deals.json"
+  active: true
+
+
+#deeplinks
+- interceptor:
+    urlRegexp: ".*example.*"
+  actions:
+    responseFromFile: "mydeeplinks.html"
+  active: true

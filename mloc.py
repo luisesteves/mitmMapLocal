@@ -3,34 +3,39 @@ import json
 from mitmproxy import ctx, http
 import yaml
 import os
+import logging
 
 reload = 12
 
 class MockResponse:
     def __init__(self):
+        logging.warning(">>> Reload")
+        self.signal = "start"
         def readConfiguration():
             try:
                 with open('cfg.yaml') as f:
-                    data = yaml.load(f)
+                    data = yaml.safe_load(f)
             except IOError:    
                 data = "{file could not be found}"
-                ctx.log.info("error while open the yaml file")
+                
             return data
         self.mockCfg = readConfiguration()
     
     def response(self, flow):
+        #https://docs.mitmproxy.org/stable/api/mitmproxy/http.html#Request
+        logging.info(">>> Signal: " + self.signal)
         def readFile(filename):
             data = ""
             try:
-                absPath = os.path.abspath("./mockdata/" + filename)
-                ctx.log.info("modify reponse from file: " + absPath)
+                absPath = os.path.abspath("../PROXY/" + filename)
+                logging.info("modify reponse from file: " + absPath)
                 data = open(absPath).read()
             except IOError:
                 data = "{file could not be found}"
             return data
 
         if not self.mockCfg["enable"]:
-            ctx.log.info("mock enable")
+            logging.info("mock enable")
             return
 
         intercepted = False
@@ -45,7 +50,7 @@ class MockResponse:
             for filter, filterValue in interceptor.items():
                 if filter == "urlRegexp":
                     if re.search(filterValue, flow.request.url):
-                        ctx.log.info(filterValue + " -> " + flow.request.url)
+                        logging.info(filterValue + " -> " + flow.request.url)
                         intercepted = True
                         continue
                     else:
@@ -58,22 +63,44 @@ class MockResponse:
                     else:
                         intercepted = False
                         break
+                if filter == "method":
+                    if filterValue == flow.request.method:
+                        logging.info(">>> filter by method")
+                        intercepted = True
+                        continue
+                    else:
+                        intercepted = False
+                        break
+                if filter == "signal":
+                    if filterValue == self.signal:
+                        logging.info(">>> filter by Signal")
+                        intercepted = True
+                        continue
+                    else:
+                        intercepted = False
+                        break
     
 
             # if the request was intercepeted then, lets run the actions
             if intercepted:
-                ctx.log.info("change response")
-                flow.request.headers["intercepted"] = "true"
+                logging.info("change response")
+                file = actions["responseFromFile"]
+                flow.request.headers["from_file"] = file
                 if "responseFromFile" in actions:
-                    flow.response.content = str.encode(readFile(actions["responseFromFile"]))
+                    flow.response.content = str.encode(readFile(file))
                 if "statusCode" in actions:
-                    ctx.log.info("modify reponse code")
+                    logging.info("modify reponse code")
                     flow.response.status_code = actions["statusCode"]
                 if "addHeader" in actions:
                     for header in actions["addHeader"]:
-                        ctx.log.info("add header")
+                        logging.info("add header")
                         flow.response.headers[header["key"]] = header["value"]
+                if "responseFromFiles" in actions:
+                    logging.info(actions["responseFromFiles"][0])
+                if "signal" in actions:
+                    logging.info(">>> signal: " + actions["signal"])
+                    self.signal = actions["signal"]
+
             intercepted = False
 
-def start():
-    return MockResponse()
+addons = [MockResponse()]
