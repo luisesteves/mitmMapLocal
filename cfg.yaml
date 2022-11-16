@@ -1,71 +1,221 @@
 enable: true
+mock_directory: "/Users/esteves/Mindera/PROXY"
 rules:
 #example
 - interceptor:
-    urlRegexp: ".*waitrose.*/api/favourites2-.*/v\n/favourites"
+    url_regexp: ".*waitrose.*/api/favourites2-.*/v\n/favourites"
+    header_key: "allow"
+    method: "POST"
+
   actions:
-    responseFromFile: "favourites/favourites.json"
-    responseFromFiles: ["FicheiroA", "ficheirob", "C"]
+    response_file: "favourites/favourites.json"
+    response_file_sequence: ["FileA", "FileB", "FileC"]
+    response_body: "{}"
+    delay: 5
+    status_code: 200
+    addHeader:
+       - key: "<key>"
+         value: "<value>"
+    save:
+      request:
+        - "header"
+        - "cookie"
+      response:
+        - "header"
+        - "cookie"
+  marker: "https://api.github.com/emojis"
   active: false
 
-#vouchers wallet
-- interceptor:
-    urlRegexp: ".*waitrose.*incentive-offers"
-    method: "GET"
-    signal: "start"
-  actions:
-    responseFromFile: "Vouchers/incentive-offer-qa/live.json"
-    statusCode: 200
-  active: true
 
+#browse
 - interceptor:
-    urlRegexp: ".*waitrose.*incentive-offers"
-    method: "POST"
+    url_regexp: "content-.*/cms/publish/productcontent/browse"
   actions:
-    responseFromFile: "Vouchers/incentive-offer-qa/POST/post.json"
-    statusCode: 200
-    signal: "post"
-  active: true
-
-- interceptor:
-    urlRegexp: ".*waitrose.*incentive-offers"
-    method: "GET"
-    signal: "post"
-  actions:
-    responseFromFile: "Vouchers/incentive-offer-qa/live-after-post.json"
-    statusCode: 200
-  active: true
-
-
-#Choose vouchers
-- interceptor:
-    urlRegexp: ".*waitrose.*mywaitrose-rewards"
-    signal: "start"
-  actions:
-    responseFromFile: "Vouchers/mywaitrose-rewards/v2/live.json"
-    statusCode: 200
-  active: true
-
-- interceptor:
-    urlRegexp: ".*waitrose.*mywaitrose-rewards"
-    signal: "post"
-  actions:
-    responseFromFile: "Vouchers/mywaitrose-rewards/v2/live-after-post.json"
-    statusCode: 200
-    signal: "start"
-  active: true
+    response_file: "product-content/browse/live.json"
+  active: false
 
 #content
 - interceptor:
-    urlRegexp: ".*waitrose.com/api/content-.*/content/waitrosegroceriescms/waitrose-app/homescreen"
+    url_regexp: ".*waitrose.com/api/content-.*/content/waitrosegroceriescms/waitrose-app/homescreen"
   actions:
-    responseFromFile: "content/waitrosegroceriescms/waitrose-app/homescreen/meal-deals.json"
+    response_file: "content/waitrosegroceriescms/waitrose-app/homescreen/meal-deals.json"
+  active: true
+
+- interceptor:
+    url_regexp: ".*waitrose.com/api/content-qa/.*/content/experience-fragments/waitrosegroceriescms/Apps/home-screen/master"
+  actions:
+    response_file: "content/waitrosegroceriescms/waitrose-app/homescreen/meal-deals.json"
+  active: true
+
+#get-home-orders
+- interceptor:
+    url_regexp: ".*waitrose.com/api/graphql-.*/graph/live\\?tag=get-home-orders"
+  actions:
+    response_file: "graph/get-home-orders/live.json"
+  active: false
+
+#products
+- interceptor:
+    url_regexp: ".*waitrose.com.*products"
+  actions:
+    response_file: "products/products-home.json"
+    #save:
+      #request:
+        #- "authorization"
+        #- "cookie"
+  active: false
+
+# slot-charges
+- interceptor:
+    url_regexp: "waitrose\\.com/api/graphql-\\D{1,4}/graph/live\\?tag=slot-charges"
+  actions:
+    status_code: 400
+  active: false 
+
+  #search
+- interceptor:
+    url_regexp: "waitrose\\.com/api/content-\\D{2,4}/v\\d/cms/publish/productcontent/search"
+  actions:
+    status_code: 400
+  active: false
+
+# slot-messages
+- interceptor:
+    url_regexp: "waitrose\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages\\?.*slotType=DELIVERY"
+  actions:
+    response_file_sequence: ["slot-experience/slot-experience-error.json", "slot-experience/slot-experience-informative.json", "slot-experience/slot-experience-success.json", "slot-experience/slot-experience-warning.json"]
+    status_code: 400
+    response_body: ""
+  marker: "grapes"
+  active: false
+
+#teste - apagar
+- interceptor:
+    url_regexp: "waitrose\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages\\?.*slotType=DELIVERY"
+  actions:
+    #response_file: "slot-experience/slot-experience-informative.json"
+    status_code: 400
+    response_body: ""
+  marker: "grapes"
+  active: true
+
+- interceptor:
+    url_regexp: "waitrose\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages\\?.*slotType=ENTERTAINING_COLLECTION"
+  actions:
+    response_file: "slot-experience/slot-experience-informative.json"
+  active: true
+
+- interceptor:
+    url_regexp: "waitrose\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages\\?.*slotType=GROCERY_COLLECTION"
+  actions:
+    response_file: "slot-experience/slot-experience-warning.json"
   active: true
 
 
+# CHOOSE VOUCHERS, mywaitrose-rewards
+- interceptor:
+    url_regexp: "waitrose.*mywaitrose-rewards"
+  actions:
+    #response_file: "Vouchers/mywaitrose-rewards/v2/useMoreOften.json"
+    response_file: "Vouchers/mywaitrose-rewards/v2/allUsed.json"
+    #response_file: "Vouchers/mywaitrose-rewards/v2/live.json"
+    status_code: 200
+  active: false
+
+# WALLET, incentive-offers
+- interceptor:
+    url_regexp: "waitrose.*incentive-offers"
+    method: "GET"
+  actions:
+    #response_file: "Vouchers/incentive-offer-qa/empty.json"
+    response_file: "Vouchers/incentive-offer-qa/live.json"
+    #response_file: "Vouchers/incentive-offer-qa/newspapper.json"
+    #response_file: "Vouchers/incentive-offer-qa/only-newspapper.json"
+    status_code: 200
+  active: false
+
+#__BEGIN__Choose_voucher_flow__BEGIN__
+- interceptor:
+    url_regexp: ".*waitrose.*mywaitrose-rewards"
+    signal: "start"
+  actions:
+    response_file: "Vouchers/mywaitrose-rewards/v2/live.json"
+    status_code: 200
+  active: false
+# \/
+- interceptor:
+    url_regexp: ".*waitrose.*mywaitrose-rewards"
+    signal: "post"
+  actions:
+    response_file: "Vouchers/mywaitrose-rewards/v2/live-after-post.json"
+    status_code: 200
+    signal: "start"
+  active: false
+# \/
+- interceptor:
+    url_regexp: ".*waitrose.*incentive-offers"
+    method: "GET"
+    signal: "start"
+  actions:
+    response_file: "Vouchers/incentive-offer-qa/live.json"
+    #response_file: "Vouchers/incentive-offer-qa/empty.json"
+    status_code: 200
+  active: false
+# \/
+- interceptor:
+    url_regexp: ".*waitrose.*incentive-offers"
+    method: "POST"
+  actions:
+    response_file: "Vouchers/incentive-offer-qa/POST/post.json"
+    status_code: 200
+    signal: "post"
+  active: false
+# \/
+- interceptor:
+    url_regexp: ".*waitrose.*incentive-offers"
+    method: "GET"
+    signal: "post"
+  actions:
+    response_file: "Vouchers/incentive-offer-qa/live-after-post.json"
+    status_code: 200
+    delay: 2
+  active: false
+#__END__Choose_voucher_flow__END__
+
+# shop-status
+- interceptor:
+    url_regexp: ".*waitrose.com/api/graphql-.*/graph/live\\?tag=shop-status"
+  actions:
+    response_file: "graph/shop-status/live-completed.json"
+  active: true
+
+# Taxonomy
+- interceptor:
+    url_regexp: ".*/api/taxonomy-entity.*/.*/taxonomy/waitrose-ecomm-groceries"
+  actions:
+    #response_file: "taxonomy/taxonomy-update-b.json"
+    response_file: "/Users/esteves/Mindera/groceries-ios/GroceriesUITests/Sources/Services/MockNetworkStackConfiguration/taxonomy/taxonomy-update-b.json"
+  active: false
+
+# Term-suggest
+- interceptor:
+    url_regexp: "waitrose\\.com/api/term-suggest-\\D{2,4}/v\\d/term-suggest/terms\\?term=.*"
+  actions:
+    #response_file: "/term-suggestions/live.json"
+    response_body: ""
+    status_code: 400
+  active: false
+
+# update-trolley-items
+- interceptor:
+    url_regexp: "waitrose\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=update-trolley-items"
+  actions:
+    response_file: "graph/update-trolley-items/live.json"
+  active: false
+
 #deeplinks
 - interceptor:
-    urlRegexp: ".*example.*"
+    url_regexp: ".*example.*"
   actions:
-    responseFromFile: "mydeeplinks.html"
+    response_file: "mydeeplinks.html"
   active: true
