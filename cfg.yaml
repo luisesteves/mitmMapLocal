@@ -13,9 +13,13 @@ rules:
     response_body: "{}"
     delay: 5
     status_code: 200
-    addHeader:
-       - key: "<key>"
-         value: "<value>"
+    request:
+      add_query_parameter:
+        - key: "<key>"
+          value: "<value>"  
+    add_header_request:
+      - key: "<key>"
+        value: "<value>"
     save:
       request:
         - "header"
@@ -26,8 +30,20 @@ rules:
   marker: "https://api.github.com/emojis"
   active: false
 
+- interceptor:
+    url_regexp: ".*waitrose.*"
+  actions:
+    delay: 2
+  active: false
 
-#browse
+# branches
+- interceptor:
+    url_regexp: "waitrose\\.com/api/branch-\\D{2,4}/v\\d/branches\\?fulfilment_type=COLLECTION"
+  actions:
+    response_file: "branches/parking-miles-665.json"
+  active: false
+
+# browse
 - interceptor:
     url_regexp: "content-.*/cms/publish/productcontent/browse"
   actions:
@@ -39,7 +55,7 @@ rules:
     url_regexp: ".*waitrose.com/api/content-.*/content/waitrosegroceriescms/waitrose-app/homescreen"
   actions:
     response_file: "content/waitrosegroceriescms/waitrose-app/homescreen/meal-deals.json"
-  active: true
+  active: false
 
 - interceptor:
     url_regexp: ".*waitrose.com/api/content-qa/.*/content/experience-fragments/waitrosegroceriescms/Apps/home-screen/master"
@@ -47,70 +63,88 @@ rules:
     response_file: "content/waitrosegroceriescms/waitrose-app/homescreen/meal-deals.json"
   active: true
 
-#get-home-orders
-- interceptor:
-    url_regexp: ".*waitrose.com/api/graphql-.*/graph/live\\?tag=get-home-orders"
-  actions:
-    response_file: "graph/get-home-orders/live.json"
-  active: false
-
 #products
+#chosen for tyou
+#wtr-wec-acpt.waitrose.com /api/products-qa/v1/products?view=SUMMARY&trolleyId=1000854799&size=24&start=0&filterByCustomerSlot=true&excludeLinesFromTrolley=true&excludeLinesWithConflicts=true&showRecommendations=true&excludeHfss=true
 - interceptor:
-    url_regexp: ".*waitrose.com.*products"
+    url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products\\?.*showRecommendations=true"
   actions:
-    response_file: "products/products-home.json"
-    #save:
-      #request:
-        #- "authorization"
-        #- "cookie"
+    response_file: "products/chosen-for-you.json"
   active: false
 
-# slot-charges
+#favourites-on-offer
 - interceptor:
-    url_regexp: "waitrose\\.com/api/graphql-\\D{1,4}/graph/live\\?tag=slot-charges"
+    url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products\\?.*customersFavouritesOnly=true"
   actions:
-    status_code: 400
-  active: false 
+    response_file: "products/favs-on-offer.json"
+  active: false
 
-  #search
+
+#products - order details 
+- interceptor:
+    url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products/\\d{6}.*"
+  actions:
+    response_file: "products/live.json"
+  active: false
+
+#productcontent/
 - interceptor:
     url_regexp: "waitrose\\.com/api/content-\\D{2,4}/v\\d/cms/publish/productcontent/search"
   actions:
-    status_code: 400
+    response_file: "product-content/browse/live.json"
+  active: false
+
+#search - product pdp
+- interceptor:
+    url_regexp: "waitrose\\.com/api/custsearch-\\D{2,4}/v\\d/search/\\d*/\\d*-\\d*-\\d*\\?orderId=\\d*"
+  actions:
+    #response_file: "products/prod-parse-error.json"
+    response_file: "search/products/088528-45453-45454.json"
+  active: false
+
+ #search incomplete offers
+- interceptor:
+    url_regexp: "waitrose\\.com/api/custsearch-\\D{2,4}/v\\d/search/\\d*"
+  actions:
+    response_file: "search/prod-product-incomplet-offers.json"
   active: false
 
 # slot-messages
 - interceptor:
     url_regexp: "waitrose\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages\\?.*slotType=DELIVERY"
   actions:
-    response_file_sequence: ["slot-experience/slot-experience-error.json", "slot-experience/slot-experience-informative.json", "slot-experience/slot-experience-success.json", "slot-experience/slot-experience-warning.json"]
-    status_code: 400
-    response_body: ""
-  marker: "grapes"
-  active: false
-
-#teste - apagar
-- interceptor:
-    url_regexp: "waitrose\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages\\?.*slotType=DELIVERY"
-  actions:
-    #response_file: "slot-experience/slot-experience-informative.json"
-    status_code: 400
-    response_body: ""
+    #response_file_sequence: ["slot-experience/slot-experience-error.json", "slot-experience/slot-experience-informative.json", "slot-experience/slot-experience-success.json", "slot-experience/slot-experience-warning.json"]
+    #status_code: 400
+    #response_body: ""
+    request:
+      add_query_parameter:
+        - key: "clientType"
+          value: "MOBILE_APP"
   marker: "grapes"
   active: true
+
 
 - interceptor:
     url_regexp: "waitrose\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages\\?.*slotType=ENTERTAINING_COLLECTION"
   actions:
     response_file: "slot-experience/slot-experience-informative.json"
-  active: true
+    add_header_request:
+       - key: "<key>"
+         value: "<value>"
+  active: false
 
 - interceptor:
     url_regexp: "waitrose\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages\\?.*slotType=GROCERY_COLLECTION"
   actions:
     response_file: "slot-experience/slot-experience-warning.json"
-  active: true
+  active: false
 
+# FAVs
+- interceptor:
+    url_regexp: "waitrose.*products"
+  actions:
+    status_code: 404
+  active: false
 
 # CHOOSE VOUCHERS, mywaitrose-rewards
 - interceptor:
@@ -128,13 +162,22 @@ rules:
     method: "GET"
   actions:
     #response_file: "Vouchers/incentive-offer-qa/empty.json"
-    response_file: "Vouchers/incentive-offer-qa/live.json"
+    #response_file: "Vouchers/incentive-offer-qa/live.json"
     #response_file: "Vouchers/incentive-offer-qa/newspapper.json"
     #response_file: "Vouchers/incentive-offer-qa/only-newspapper.json"
+    response_file: "Vouchers/incentive-offer-qa/test.json"
+    #response_file: "Vouchers/incentive-offer-qa/sort.json"
     status_code: 200
   active: false
 
-#__BEGIN__Choose_voucher_flow__BEGIN__
+
+##########################################################
+#                                                        #
+#                                                        #
+#                  Choose voucher flow                   #
+#                                                        #
+#                                                        #
+##########################################################
 - interceptor:
     url_regexp: ".*waitrose.*mywaitrose-rewards"
     signal: "start"
@@ -180,21 +223,21 @@ rules:
     status_code: 200
     delay: 2
   active: false
-#__END__Choose_voucher_flow__END__
 
-# shop-status
-- interceptor:
-    url_regexp: ".*waitrose.com/api/graphql-.*/graph/live\\?tag=shop-status"
-  actions:
-    response_file: "graph/shop-status/live-completed.json"
-  active: true
+##########################################################
+#                                                        #
+#                                                        #
+#                Choose voucher flow END                 #
+#                                                        #
+#                                                        #
+##########################################################
 
 # Taxonomy
 - interceptor:
     url_regexp: ".*/api/taxonomy-entity.*/.*/taxonomy/waitrose-ecomm-groceries"
   actions:
     #response_file: "taxonomy/taxonomy-update-b.json"
-    response_file: "/Users/esteves/Mindera/groceries-ios/GroceriesUITests/Sources/Services/MockNetworkStackConfiguration/taxonomy/taxonomy-update-b.json"
+    response_file_sequence: ["taxonomy/with_category.json", "taxonomy/without_category.json"]
   active: false
 
 # Term-suggest
@@ -206,16 +249,85 @@ rules:
     status_code: 400
   active: false
 
-# update-trolley-items
-- interceptor:
-    url_regexp: "waitrose\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=update-trolley-items"
-  actions:
-    response_file: "graph/update-trolley-items/live.json"
-  active: false
-
 #deeplinks
 - interceptor:
     url_regexp: ".*example.*"
   actions:
     response_file: "mydeeplinks.html"
+  active: true
+
+
+##########################################################
+#                                                        #
+#                                                        #
+#                      GRAPH                             #
+#                                                        #
+#                                                        #
+##########################################################
+
+# campaigns
+- interceptor:
+    url_regexp: "waitrose\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=campaigns"
+  actions:
+    response_file: "graph/campains/live.json"
+  active: true
+
+#get-home-orders
+- interceptor:
+    url_regexp: ".*waitrose.com/api/graphql-.*/graph/live\\?tag=get-home-orders"
+  actions:
+    response_file: "graph/get-home-orders/665.json"
+  active: true
+
+# slot-charges
+- interceptor:
+    url_regexp: "waitrose\\.com/api/graphql-\\D{1,4}/graph/live\\?tag=slot-charges"
+  actions:
+    status_code: 400
+  active: false 
+
+# get-trolley
+- interceptor:
+    url_regexp: "waitrose\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=get-trolley"
+  actions:
+    #response_file: "graph/get-trolley/error-allow-subs-662-prod.json"
+    response_file: "graph/get-trolley/test.json"
+  active: false
+
+# update-trolley-items
+- interceptor:
+    url_regexp: "waitrose\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=update-trolley-items"
+  actions:
+    response_file: "graph/update-trolley-items/live.json"
+    #delay: 20
+  active: false
+
+
+  #current-slot
+- interceptor:
+    url_regexp: "waitrose\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=current-slot"
+  actions:
+    response_file: "graph/current-slot/error-307"
+  active: false
+
+##########################################################
+#                                                        #
+#                                                        #
+#                          SPG                           #
+#                                                        #
+#                                                        #
+##########################################################
+# shop-status
+- interceptor:
+    url_regexp: ".*waitrose.com/api/graphql-.*/graph/live\\?tag=shop-status"
+  actions:
+    response_file: "SPG/graph/shop-status/live-completed.json"
+  active: true
+
+
+# scan-item-to-shop-trolley
+- interceptor:
+    url_regexp: ".*waitrose.com/api/graphql-.*/graph/live\\?tag=scan-item-to-shop-trolley"
+  actions:
+    response_file: "SPG/graph/scan-item-to-shop-trolley/shop-trolley.json"
   active: true

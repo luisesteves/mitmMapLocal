@@ -9,7 +9,7 @@ pip install pyyaml
 
 ## how to start
 create the following file:
-`.mitmproxy/config.yaml` 
+`~/.mitmproxy/config.yaml` 
 with the content:
 ```
 scripts:

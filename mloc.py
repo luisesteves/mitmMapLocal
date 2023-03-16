@@ -25,17 +25,89 @@ class MockResponse:
                 self.mock_configuration = yaml.safe_load(f)
         except IOError:    
             self.mock_configuration = "{file could not be found}"
-        
-    def response(self, flow):
-        logging.info("🟢 Flow: %s" % flow.request.url)
-        current_timestamp = datetime.timestamp(datetime.now())
 
+    def reload_configuration(self):
         fileTs = os.path.getmtime(self.configuration_file)
         if self.cfg_modified_timestamp < fileTs or not self.loaded:
             logging.warning(">>> Reload")
             self.cfg_modified_timestamp = fileTs
             self.read_configuration()
             self.loaded = True
+
+    def interceptor(self, flow):
+        #intercept the request with the all the interception rules
+        for rule in self.mock_configuration["rules"]:
+            #logging.info("✍️ rule: %s" % str(rule))
+            interceptor = rule["interceptor"]
+            actions = rule["actions"]
+            marker = rule["marker"] if "marker" in rule else "heavy_exclamation_mark"
+            
+            if not rule["active"]:
+                continue
+
+            def log_filter(filter):
+                logging.info("\U00002757 intercepted \"%s\" " % (filter))
+
+            for filter, filter_value in interceptor.items():
+                if filter == "url_regexp":
+                    if re.search(filter_value, flow.request.url):
+                        log_filter(filter)
+                        intercepted = True
+                        continue
+                    else:
+                        intercepted = False
+                        break
+                if filter == "header_key":
+                    if filter_value in flow.response.headers:
+                        log_filter(filter)
+                        intercepted = True
+                        continue
+                    else:
+                        intercepted = False
+                        break
+                if filter == "method":
+                    if filter_value == flow.request.method:
+                        log_filter(filter)
+                        intercepted = True
+                        continue
+                    else:
+                        intercepted = False
+                        break
+                if filter == "signal":
+                    if filter_value == self.signal:
+                        log_filter(filter)
+                        intercepted = True
+                        continue
+                    else:
+                        intercepted = False
+                        break
+            if intercepted:
+                # we dont need to continue to try other rules
+                break
+
+        return {"intercepted": intercepted, "marker": marker, "actions": actions}
+
+    def request(self, flow):
+        logging.info("🔼 Flow: %s" % flow.request.url)
+        self.reload_configuration()
+
+        intercepted = self.interceptor(flow)
+        logging.info("🧐 intercepted  %s", str(intercepted["intercepted"]))
+
+        # if the request was intercepeted then, lets run the actions
+        if intercepted["intercepted"]:
+            actions = intercepted["actions"]
+            flow.marked = ":%s:" % intercepted["marker"]
+            if "request" in actions:
+                request_actions = actions["request"]
+                logging.info("\U00002757  %s", str(request_actions))
+                if "add_query_parameter" in request_actions:
+                    for query_parameter in request_actions["add_query_parameter"]:
+                        flow.request.query[query_parameter["key"]] = query_parameter["value"]
+        
+    def response(self, flow):
+        logging.info("⬇️ Flow: %s" % flow.request.url)
+        self.reload_configuration()
 
         def read_file(filename):
             data = ""
@@ -55,18 +127,19 @@ class MockResponse:
             logging.info("❌ mLoc disable")
             return
 
-        intercepted = False
         #intercept the request with the all the interception rules
         for rule in self.mock_configuration["rules"]:
+            logging.info("✍️  rule: %s" % str(rule))
             interceptor = rule["interceptor"]
             actions = rule["actions"]
             marker = rule["marker"] if "marker" in rule else "heavy_exclamation_mark"
             if not rule["active"]:
                 continue
-    
+
             def log_filter(filter):
                 logging.info("\U00002757 intercepted \"%s\" " % (filter))
 
+            intercepted = False
             for filter, filter_value in interceptor.items():
                 if filter == "url_regexp":
                     if re.search(filter_value, flow.request.url):
@@ -146,6 +219,9 @@ class MockResponse:
                             for fild in actions["request"]:
                                 file.write(flow.request.headers[fild] + "\n")
                             file.write("\n")
+                
+                # we dont need to continue to try other rules
+                break
 
             intercepted = False
 
