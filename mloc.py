@@ -41,6 +41,7 @@ class MockResponse:
             interceptor = rule["interceptor"]
             actions = rule["actions"]
             marker = rule["marker"] if "marker" in rule else "heavy_exclamation_mark"
+            intercepted = False
             
             if not rule["active"]:
                 continue
@@ -51,6 +52,14 @@ class MockResponse:
             for filter, filter_value in interceptor.items():
                 if filter == "url_regexp":
                     if re.search(filter_value, flow.request.url):
+                        log_filter(filter)
+                        intercepted = True
+                        continue
+                    else:
+                        intercepted = False
+                        break
+                if filter == "body_regexp":
+                    if re.search(filter_value, flow.request.content.decode("utf-8")):
                         log_filter(filter)
                         intercepted = True
                         continue
@@ -85,7 +94,6 @@ class MockResponse:
                 # we dont need to continue to try other rules
                 flow.marked = ":%s:" % marker
                 break
-
         return {"intercepted": intercepted, "actions": actions}
 
     def request(self, flow):
@@ -95,22 +103,21 @@ class MockResponse:
         intercepted = self.interceptor(flow)
 
         # if the request was intercepeted then, lets run the actions
-        if intercepted["intercepted"]:
+        if intercepted["intercepted"] and "action" in intercepted["actions"] and intercepted["actions"]["request"] is not None:
             request_actions = intercepted["actions"]["request"]
-            if request_actions is not None:
-                logging.info("🪛  %s", str(request_actions))
-                if "add_query_parameter" in request_actions:
-                    for query_parameter in request_actions["add_query_parameter"]:
-                        flow.request.query[query_parameter["key"]] = query_parameter["value"]
-                if "add_header_request" in request_actions:
-                    for header in request_actions["add_header_request"]:
-                        flow.request.headers[header["key"]] = header["value"]
-                if "save" in request_actions:
-                    save_actions = request_actions["save"]
-                    with open('save.txt', 'a') as file:
-                        for fild in save_actions:
-                            file.write(flow.request.headers[fild] + "\n")
-                        file.write("\n")
+            logging.info("🪛  %s", str(request_actions))
+            if "add_query_parameter" in request_actions:
+                for query_parameter in request_actions["add_query_parameter"]:
+                    flow.request.query[query_parameter["key"]] = query_parameter["value"]
+            if "add_header_request" in request_actions:
+                for header in request_actions["add_header_request"]:
+                    flow.request.headers[header["key"]] = header["value"]
+            if "save" in request_actions:
+                save_actions = request_actions["save"]
+                with open('save.txt', 'a') as file:
+                    for fild in save_actions:
+                        file.write(flow.request.headers[fild] + "\n")
+                    file.write("\n")
         
     def response(self, flow):
 
@@ -138,46 +145,46 @@ class MockResponse:
         intercepted = self.interceptor(flow)
 
         # if the request was intercepeted then, lets run the actions
-        if intercepted["intercepted"]:
+        if intercepted["intercepted"] and "response" in intercepted["actions"] and intercepted["actions"]["response"] is not None:
             response_actions = intercepted["actions"]["response"]
-            if response_actions is not None:
-                logging.info("🪛  %s", str(response_actions))
+            logging.info("🪛  %s", str(response_actions))
 
-                response_from_file_header = "__f_r_o_m__f_i_le__"
-                if "file" in response_actions:
-                    file = response_actions["file"]
-                    flow.request.headers[response_from_file_header] = file
-                    flow.response.headers[response_from_file_header] = file
-                    flow.response.content = str.encode(read_file(file))
-                if "body" in response_actions:
-                    #logging.info("🪛  body")
-                    flow.response.content = str.encode(response_actions["body"])
-                if "status_code" in response_actions:
-                    flow.response.status_code = response_actions["status_code"]
-                if "file_sequence" in response_actions:
-                    file = response_actions["file_sequence"][self.response_sequence_index]
-                    flow.request.headers[response_from_file_header] = file
-                    flow.response.headers[response_from_file_header] = file
-                    flow.response.content = str.encode(read_file(file))
-                    if self.response_sequence_index == len(response_actions["file_sequence"]) - 1:
-                        self.response_sequence_index = 0
-                    else:
-                        self.response_sequence_index += 1
-                if "file_random" in response_actions:
-                    randomIndex = random.randint(0, len(response_actions["file_random"]) - 1)
-                    file = response_actions["file_random"][randomIndex]
-                    flow.request.headers[response_from_file_header] = file
-                    flow.response.headers[response_from_file_header] = file
-                    flow.response.content = str.encode(read_file(file))
-                if "signal" in response_actions:
-                    self.signal = response_actions["signal"]
-                if "delay" in response_actions:
-                    sleep(response_actions["delay"])
-                if "save" in response_actions:
-                    save_actions = response_actions["save"]
-                    with open('save.txt', 'a') as file:
-                        for fild in save_actions:
-                            file.write(flow.request.headers[fild] + "\n")
-                        file.write("\n")
+            response_from_file_header = "__f_r_o_m__f_i_le__"
+            if "file" in response_actions:
+                file = response_actions["file"]
+                flow.request.headers[response_from_file_header] = file
+                flow.response.headers[response_from_file_header] = file
+                flow.response.content = str.encode(read_file(file))
+            if "body" in response_actions:
+                #logging.info("🪛  body")
+                flow.response.content = str.encode(response_actions["body"])
+            if "status_code" in response_actions:
+                flow.response.status_code = response_actions["status_code"]
+            if "file_sequence" in response_actions:
+                file = response_actions["file_sequence"][self.response_sequence_index]
+                flow.request.headers[response_from_file_header] = file
+                flow.response.headers[response_from_file_header] = file
+                flow.response.content = str.encode(read_file(file))
+                if self.response_sequence_index == len(response_actions["file_sequence"]) - 1:
+                    self.response_sequence_index = 0
+                else:
+                    self.response_sequence_index += 1
+            if "file_random" in response_actions:
+                randomIndex = random.randint(0, len(response_actions["file_random"]) - 1)
+                file = response_actions["file_random"][randomIndex]
+                flow.request.headers[response_from_file_header] = file
+                flow.response.headers[response_from_file_header] = file
+                flow.response.content = str.encode(read_file(file))
+            if "signal" in response_actions:
+                self.signal = response_actions["signal"]
+            if "delay" in response_actions:
+                logging.info("🕓")
+                sleep(response_actions["delay"])
+            if "save" in response_actions:
+                save_actions = response_actions["save"]
+                with open('save.txt', 'a') as file:
+                    for fild in save_actions:
+                        file.write(flow.request.headers[fild] + "\n")
+                    file.write("\n")
 
 addons = [MockResponse()]
