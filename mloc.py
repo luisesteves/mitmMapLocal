@@ -1,6 +1,6 @@
 import re
 import json
-from mitmproxy import ctx, http
+from mitmproxy import ctx, http, command
 import yaml
 import os
 import logging
@@ -11,6 +11,17 @@ import os
 import emoji
 
 class MockResponse:
+    
+    @command.command("mock.toggle")
+    def mock_toggle(self):
+        self.mock_toggle_state = not self.mock_toggle_state
+        logging.info("⏺️  mock toggle: %s" % self.mock_toggle_state)
+
+    @command.command("mock.flow")
+    def mock_flow(self):
+        self.signal = "start"
+        logging.info("🌼 flow restart")
+
     def __init__(self):
         self.signal = "start"
         self.response_sequence_index = 0
@@ -18,6 +29,7 @@ class MockResponse:
         self.configuration_file = "cfg.yaml"
         self.cfg_modified_timestamp = os.path.getmtime(self.configuration_file)
         self.loaded = False
+        self.mock_toggle_state = False
     
     def read_configuration(self):
         try:
@@ -33,6 +45,7 @@ class MockResponse:
             self.cfg_modified_timestamp = fileTs
             self.read_configuration()
             self.loaded = True
+            self.mock_toggle_state = self.mock_configuration["enable"]
 
     def interceptor(self, flow):
         #intercept the request with the all the interception rules
@@ -103,9 +116,13 @@ class MockResponse:
         intercepted = self.interceptor(flow)
 
         # if the request was intercepeted then, lets run the actions
-        if intercepted["intercepted"] and "action" in intercepted["actions"] and intercepted["actions"]["request"] is not None:
+        if intercepted["intercepted"] and "request" in intercepted["actions"] and intercepted["actions"]["request"] is not None:
+
             request_actions = intercepted["actions"]["request"]
             logging.info("🪛  %s", str(request_actions))
+            if "delay" in request_actions:
+                logging.info("🕓")
+                sleep(request_actions["delay"])
             if "add_query_parameter" in request_actions:
                 for query_parameter in request_actions["add_query_parameter"]:
                     flow.request.query[query_parameter["key"]] = query_parameter["value"]
@@ -138,7 +155,11 @@ class MockResponse:
         logging.info("⬇️  Flow: %s" % flow.request.url)
         self.reload_configuration()
 
-        if not self.mock_configuration["enable"]:
+        # if not self.mock_configuration["enable"]:
+        #     logging.info("❌ mLoc disable")
+        #     return
+
+        if not self.mock_toggle_state:
             logging.info("❌ mLoc disable")
             return
 
@@ -158,8 +179,25 @@ class MockResponse:
             if "body" in response_actions:
                 #logging.info("🪛  body")
                 flow.response.content = str.encode(response_actions["body"])
+            if "replace" in response_actions:
+                replace_cfg = response_actions["replace"]
+                replace = replace_cfg["replace"]
+                replacement = replace_cfg["replacement"]
+                content = flow.response.text
+                flow.response.content = str.encode(re.sub(replace, replacement, content))
             if "status_code" in response_actions:
                 flow.response.status_code = response_actions["status_code"]
+            if "add_header" in response_actions:
+                for header in response_actions["add_header"]:
+                    flow.response.headers[header["key"]] = header["value"]
+            if "remove_header" in response_actions:
+                flow.response.headers.remove(response_actions["remove_header"])
+            if "change_header_key" in response_actions:
+                for header in response_actions["change_header_key"]:
+                    value = flow.response.headers[header["key"]]
+                    logging.info("👺  %s", str(value))
+                    flow.response.headers.pop(header["key"])
+                    flow.response.headers[header["new_key"]] = value
             if "file_sequence" in response_actions:
                 file = response_actions["file_sequence"][self.response_sequence_index]
                 flow.request.headers[response_from_file_header] = file
@@ -177,6 +215,7 @@ class MockResponse:
                 flow.response.content = str.encode(read_file(file))
             if "signal" in response_actions:
                 self.signal = response_actions["signal"]
+                logging.info("🚦 %s", self.signal)
             if "delay" in response_actions:
                 logging.info("🕓")
                 sleep(response_actions["delay"])
