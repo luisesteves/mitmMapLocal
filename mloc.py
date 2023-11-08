@@ -126,6 +126,9 @@ class MockResponse:
             if "add_query_parameter" in request_actions:
                 for query_parameter in request_actions["add_query_parameter"]:
                     flow.request.query[query_parameter["key"]] = query_parameter["value"]
+            if "change_query_parameter" in request_actions:
+                for query_parameter in request_actions["change_query_parameter"]:
+                    flow.request.query[query_parameter["key"]] = query_parameter["value"]
             if "add_header_request" in request_actions:
                 for header in request_actions["add_header_request"]:
                     flow.request.headers[header["key"]] = header["value"]

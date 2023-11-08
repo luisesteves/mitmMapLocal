@@ -12,6 +12,9 @@ rules:
       delay: 5
       add_query_parameter:
         - key: "<key>"
+          value: "<value>"
+      change_query_parameter:
+        - key: "<key>"
           value: "<value>"  
       add_header:
         - key: "<key>"
@@ -32,6 +35,9 @@ rules:
       body: "{}"
       delay: 5
       status_code: 200
+      replace:
+        replace: "regex"
+        replacement: "string"
       save:
         - "header"
         - "cookie"
@@ -55,7 +61,7 @@ rules:
       change_header_key:
         - key: "allow"
           new_key: "Allow"
-  active: true
+  active: false
 
 # branches
 - interceptor:
@@ -82,7 +88,14 @@ rules:
       #status_code: 500
   active: false
 
-
+# browse / from tax
+- interceptor:
+    url_regexp: "content-.*/cms/publish/productcontent/browse/\\d"
+  actions:
+    response:
+      file: "product-content/browse/live.json"
+      #status_code: 500
+  active: false
 
 # set favourite
 - interceptor:
@@ -113,6 +126,8 @@ rules:
       file: "content/waitrosegroceriescms/waitrose-app/homescreen/meal-deals.json"
   active: true
 
+
+#está a causar um crash na app de beta 
 - interceptor:
     url_regexp: "waitrose.com/api/content-\\D{2,4}/v\\d/content/experience-fragments/waitrosegroceriescms/Apps/home-screen-test/master"
     #url_regexp: ".*waitrose.com/api/content-.*/.*/content/experience-fragments/waitrosegroceriescms/Apps/home-screen/master"
@@ -196,7 +211,7 @@ rules:
 - interceptor:
     url_regexp: "waitrose\\.com/api/custsearch-\\D{2,4}/v\\d/search/\\d*"
     #body_regexp: "promotion.*101"
-    body_regexp: "promotion.*431390"
+    body_regexp: "promotion.*89232"
   actions:
     response:
       #file: "search/prod-product-incomplet-offers.json"
@@ -206,6 +221,7 @@ rules:
       #file: "search/acpt-86823.json"
       #file: "search/acpt-wine-promo-hammer.json"
       #file: "search/regular-promo.json"
+  marker: "arrow_heading_down"
   active: false
 
 # slot-messages
@@ -218,11 +234,11 @@ rules:
           value: "MOBILE_APP"
     response:
       #file_sequence: ["slot-experience/slot-experience-error.json", "slot-experience/slot-experience-informative.json", "slot-experience/slot-experience-success.json", "slot-experience/slot-experience-warning.json"]
-      file: "slot-experience/slot-experience-informative.json"
+      #file: "slot-experience/slot-experience-informative.json"
       #status_code: 400
       #body: ""
   marker: "grapes"
-  active: false
+  active: true
 
 - interceptor:
     url_regexp: "waitrose\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages\\?.*slotType=ENTERTAINING_COLLECTION"
@@ -246,6 +262,21 @@ rules:
       #status_code: 404
       #file: "products/fav-fack-meal-deal.json"
       file: "products/live.json"
+  active: false
+
+# view alternatives
+- interceptor:
+    url_regexp: "waitrose\\.com/api/products-\\D{1,4}/v\\d/products\\?view=SUMMARY.*categoryId=\\d*"
+  actions:
+    response:
+      status_code: 200
+      #file: "products/view-alternatives/live-empty.json"
+      #file: "products/view-alternatives/live-killer.json"
+      #file: "products/view-alternatives/live-cake.json"
+      replace:
+        replace: "totalResults\":27"
+        replacement: "totalResults\":0"
+  marker: "adult"
   active: false
 
   # memberships
@@ -302,7 +333,7 @@ rules:
   actions:
     response:
       file: "Vouchers/incentive-offer-qa/nuno-1.json"
-  active: true
+  active: false
 
 - interceptor:
     url_regexp: "waitrose.*incentive-offers/propositions"
@@ -310,7 +341,7 @@ rules:
   actions:
     response:
       file: "Vouchers/incentive-offer-qa/propositions/prop.json"
-  active: true
+  active: false
 
 - interceptor:
     url_regexp: "waitrose.*incentive-offers/.*/load"
@@ -320,7 +351,7 @@ rules:
       status_code: 200
       body: ""
       signal: "patch"
-  active: true
+  active: false
 
 - interceptor:
     url_regexp: "waitrose.*incentive-offers$"
@@ -329,7 +360,7 @@ rules:
   actions:
     response:
       file: "Vouchers/incentive-offer-qa/nuno-2.json"
-  active: true
+  active: false
 
 - interceptor:
     url_regexp: "waitrose.*incentive-offers/propositions"
@@ -337,7 +368,7 @@ rules:
   actions:
     response:
       file: "Vouchers/incentive-offer-qa/propositions/prop-2.json"
-  active: true
+  active: false
 
 - interceptor:
     url_regexp: "waitrose.*incentive-offers/.*/unload"
@@ -348,7 +379,7 @@ rules:
       status_code: 200
       body: ""
       signal: "start"
-  active: true
+  active: false
 
 
 ##########################################################
@@ -423,7 +454,7 @@ rules:
     url_regexp: ".*/api/taxonomy-entity.*/.*/taxonomy/waitrose-ecomm-groceries"
   actions:
     response:
-      file: "taxonomy/taxtax.json"
+      file: "taxonomy/taxonomy.json"
       #file_sequence: ["taxonomy/with_category.json", "taxonomy/without_category.json"]
   active: false
 
@@ -499,11 +530,12 @@ rules:
     response:
       #file: "graph/get-trolley/error-allow-subs-662-prod.json"
       #file: "graph/get-trolley/error-allow-subs-662-prod-v2.json"
-      file: "graph/get-trolley/live.json"
+      file: "graph/get-trolley/view-similar.json"
+      #file: "graph/get-trolley/live.json"
       #file: "graph/get-trolley/774-deposit-prod.json"
-      replace:
-        replace: "NOT_ALLOWED"
-        replacement: "ALLOWED"
+      #replace:
+        #replace: "NOT_ALLOWED"
+        #replacement: "ALLOWED"
   active: false
 
 # update-trolley-items
