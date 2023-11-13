@@ -15,7 +15,13 @@ rules:
           value: "<value>"
       change_query_parameter:
         - key: "<key>"
-          value: "<value>"  
+          value: "<value>"
+      replace_url_component:
+        - key: "<key>"
+          value: "<value>" 
+      replace_body_component:
+        - key: "<key>"
+          value: "<value>" 
       add_header:
         - key: "<key>"
           value: "<value>"
@@ -118,7 +124,7 @@ rules:
   active: false
 
 
-#content
+#content - meal deals home
 - interceptor:
     url_regexp: ".*waitrose.com/api/content-.*/content/waitrosegroceriescms/waitrose-app/homescreen"
   actions:
@@ -132,10 +138,17 @@ rules:
     url_regexp: "waitrose.com/api/content-\\D{2,4}/v\\d/content/experience-fragments/waitrosegroceriescms/Apps/home-screen-test/master"
     #url_regexp: ".*waitrose.com/api/content-.*/.*/content/experience-fragments/waitrosegroceriescms/Apps/home-screen/master"
   actions:
-    response:
+    request:
+      replace_url_component:
+        - key: "home-screen-test"
+          value: "home-screen" 
+      replace_body_component:
+        - key: "home-screen-test"
+          value: "home-screen" 
       #file: "content/waitrosegroceriescms/waitrose-app/homescreen/meal-deals.json"
-      file: "content/waitrosegroceriescms/waitrose-app/homescreen/live.json"
+      #file: "content/waitrosegroceriescms/waitrose-app/homescreen/live.json"
   active: true
+  marker: "boomerang"
 
 ##########################################################
 #                                                        #
@@ -187,15 +200,15 @@ rules:
       file: "products/live.json"
   active: false
 
-#productcontent/
+#productcontent/ search feature
 - interceptor:
-    url_regexp: "waitrose\\.com/api/content-\\D{2,4}/v\\d/cms/publish/productcontent/search"
+    url_regexp: "waitrose\\.com/api/content-\\D{2,4}/v\\d/cms/publish/productcontent/search/\\d*"
   actions:
     response:
       #file: "product-content/browse/live.json"
       file: "search/live.json"
       #status_code: 403
-  active: false
+  active: true
 
 #search - product pdp
 - interceptor:
@@ -264,20 +277,30 @@ rules:
       file: "products/live.json"
   active: false
 
-# view alternatives
+# view alternatives / similar 
 - interceptor:
     url_regexp: "waitrose\\.com/api/products-\\D{1,4}/v\\d/products\\?view=SUMMARY.*categoryId=\\d*"
   actions:
     response:
       status_code: 200
       #file: "products/view-alternatives/live-empty.json"
-      #file: "products/view-alternatives/live-killer.json"
+      file: "products/view-alternatives/live-killer.json"
       #file: "products/view-alternatives/live-cake.json"
-      replace:
-        replace: "totalResults\":27"
-        replacement: "totalResults\":0"
+      #replace:
+      #  replace: "totalResults\":27"
+      #  replacement: "totalResults\":0"
   marker: "adult"
   active: false
+
+# SFTO
+- interceptor:
+    url_regexp: "waitrose\\.com/api/products-\\D{1,4}/v\\d/products/\\d*.*\\?view=SUMMARY\\&trolleyId=\\d*"
+  actions:
+    response:
+      status_code: 200
+      file: "products/sfto/out-of-stock.json"
+  marker: "studio_microphone"
+  active: true
 
   # memberships
 - interceptor:

@@ -129,6 +129,13 @@ class MockResponse:
             if "change_query_parameter" in request_actions:
                 for query_parameter in request_actions["change_query_parameter"]:
                     flow.request.query[query_parameter["key"]] = query_parameter["value"]
+            if "replace_url_component" in request_actions:
+                for query_parameter in request_actions["replace_url_component"]:
+                    flow.request.url = flow.request.url.replace(query_parameter["key"], query_parameter["value"])
+            if "replace_body_component" in request_actions:
+                for query_parameter in request_actions["replace_body_component"]:
+                    content = flow.request.text
+                    flow.request.content = str.encode(re.sub(query_parameter["key"], query_parameter["value"], content))
             if "add_header_request" in request_actions:
                 for header in request_actions["add_header_request"]:
                     flow.request.headers[header["key"]] = header["value"]
