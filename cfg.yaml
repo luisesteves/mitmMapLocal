@@ -197,7 +197,8 @@ rules:
     url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products/\\d{6}.*"
   actions:
     response:
-      file: "products/live.json"
+      #file: "products/live.json"
+      file: "products/order-view-similar.json"
   active: false
 
 #productcontent/ search feature
@@ -206,9 +207,9 @@ rules:
   actions:
     response:
       #file: "product-content/browse/live.json"
-      file: "search/live.json"
+      file: "search/view-similar.json"
       #status_code: 403
-  active: true
+  active: false
 
 #search - product pdp
 - interceptor:
@@ -282,7 +283,7 @@ rules:
     url_regexp: "waitrose\\.com/api/products-\\D{1,4}/v\\d/products\\?view=SUMMARY.*categoryId=\\d*"
   actions:
     response:
-      status_code: 200
+      status_code: 400
       #file: "products/view-alternatives/live-empty.json"
       file: "products/view-alternatives/live-killer.json"
       #file: "products/view-alternatives/live-cake.json"
@@ -300,7 +301,7 @@ rules:
       status_code: 200
       file: "products/sfto/out-of-stock.json"
   marker: "studio_microphone"
-  active: true
+  active: false
 
   # memberships
 - interceptor:
@@ -553,20 +554,21 @@ rules:
     response:
       #file: "graph/get-trolley/error-allow-subs-662-prod.json"
       #file: "graph/get-trolley/error-allow-subs-662-prod-v2.json"
-      file: "graph/get-trolley/view-similar.json"
+      #file: "graph/get-trolley/view-similar.json"
       #file: "graph/get-trolley/live.json"
       #file: "graph/get-trolley/774-deposit-prod.json"
+      file: "graph/get-trolley/incomplete-offer-issue.json"
       #replace:
         #replace: "NOT_ALLOWED"
         #replacement: "ALLOWED"
-  active: false
+  active: true
 
 # update-trolley-items
 - interceptor:
     url_regexp: "waitrose\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=update-trolley-items"
   actions:
     response:
-      file: "graph/update-trolley-items/live.json"
+      file: "graph/update-trolley-items/view-similar.json"
       #delay: 20
   active: false
 

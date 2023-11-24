@@ -15,7 +15,7 @@ class MockResponse:
     @command.command("mock.toggle")
     def mock_toggle(self):
         self.mock_toggle_state = not self.mock_toggle_state
-        logging.info("⏺️  mock toggle: %s" % self.mock_toggle_state)
+        logging.warning("⏺️  mock toggle: %s" % self.mock_toggle_state)
 
     @command.command("mock.flow")
     def mock_flow(self):
