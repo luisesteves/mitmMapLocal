@@ -22,6 +22,7 @@ rules:
       replace_body_component:
         - key: "<key>"
           value: "<value>" 
+      replace_body: "{}"
       add_header:
         - key: "<key>"
           value: "<value>"
@@ -130,8 +131,25 @@ rules:
   actions:
     response:
       file: "content/waitrosegroceriescms/waitrose-app/homescreen/meal-deals.json"
-  active: true
+  active: false
 
+
+# offers > offer type
+# waitrose.com /api/content-prod/v2/content/offers/percentage-off?clientType=WEB_APP
+- interceptor:
+    url_regexp: "waitrose\\.com/api/content-\\D{1,4}/v\\d/content/offers/.*"
+  actions:
+    response:
+      file: "offers/live.json"
+  active: false
+
+# browse > offers
+- interceptor:
+    url_regexp: "waitrose\\.com/api/content-\\D{1,4}/v\\d/content/offers?"
+  actions:
+    response:
+      file: "offers/live.json"
+  active: false
 
 #está a causar um crash na app de beta 
 - interceptor:
@@ -147,8 +165,9 @@ rules:
           value: "home-screen" 
       #file: "content/waitrosegroceriescms/waitrose-app/homescreen/meal-deals.json"
       #file: "content/waitrosegroceriescms/waitrose-app/homescreen/live.json"
+      #file: "content/waitrosegroceriescms/waitrose-app/homescreen/drama.json"
+  marker: "1st_place_medal"
   active: true
-  marker: "boomerang"
 
 ##########################################################
 #                                                        #
@@ -174,7 +193,7 @@ rules:
       file: "products/new-lower-price.json"
   active: false
 
-#favourites-on-offer
+#favourites-on-offer / home
 - interceptor:
     url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products\\?.*customersFavouritesOnly=true"
   actions:
@@ -192,7 +211,7 @@ rules:
 
 ##########################################################
 
-#products - order details 
+#products - order details - SFTO
 - interceptor:
     url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products/\\d{6}.*"
   actions:
@@ -205,10 +224,20 @@ rules:
 - interceptor:
     url_regexp: "waitrose\\.com/api/content-\\D{2,4}/v\\d/cms/publish/productcontent/search/\\d*"
   actions:
+    #request:
+      #replace_body: "{\"customerSearchRequest\":{\"queryParams\":{\"size\":48,\"category\":\"234676\",\"searchTerm\":\"\",\"sortBy\":\"RELEVANCE\",\"searchTags\":[{\"group\":\"CUSTOM\",\"text\":\"Yoghurt\"}],\"filterTags\":[{\"id\":\"suitableforthoseavoidingmilkfilter\",\"value\":\"Suitable_for_those_avoiding_milk\"}],\"orderId\":\"0\",\"categoryLevel\":1}}}"
+      #replace_body: "{\"customerSearchRequest\":{\"queryParams\":{\"size\":48,\"category\":\"234676\",\"searchTerm\":\"\",\"sortBy\":\"RELEVANCE\",\"searchTags\":[{\"group\":\"CUSTOM\",\"text\":\"Yoghurt\"}],\"filterTags\":[{\"id\":\"suitableforthoseavoidingmilkfilter\",\"value\":\"Suitable_for_those_avoiding_milk\"}],\"orderId\":\"0\",\"categoryLevel\":1}}}"
+      #replace_body: "{\"customerSearchRequest\":{\"queryParams\":{\"category\":\"234676\",\"categoryLevel\":1,\"filterTags\":[{\"count\":35,\"id\":\"suitableforthoseavoidingmilkfilter\",\"text\":\"No Milk\",\"value\":\"Suitable_for_those_avoiding_milk\"}],\"orderId\":\"0\",\"searchTags\":[{\"group\":\"CUSTOM\",\"text\":\"Yoghurt\"}],\"searchTerm\":\"yoghurt\",\"sortBy\":\"RELEVANCE\"}}}"
+      # replace_body_component: 
+      #   - key: "\"searchTags\":\\[\\]"
+      #     value: "\"searchTags\":[{\"group\": \"CUSTOM\",\"text\": \"Yoghurt\"}]"
+      #   - key: "\"searchTerm\":\"yoghurt\""
+      #     value: "\"searchTerm\":\"\""
     response:
       #file: "product-content/browse/live.json"
-      file: "search/view-similar.json"
-      #status_code: 403
+      #file: "search/view-similar.json"
+      file: "search/live.json"
+      #status_code: 200
   active: false
 
 #search - product pdp
@@ -217,7 +246,8 @@ rules:
   actions:
     response:
       #file: "products/prod-parse-error.json"
-      file: "search/products/live.json"
+      #file: "search/products/live.json"
+      file: "search/products/894714-product-id.json"
       #status_code: 423
   active: false
 
@@ -225,13 +255,19 @@ rules:
 - interceptor:
     url_regexp: "waitrose\\.com/api/custsearch-\\D{2,4}/v\\d/search/\\d*"
     #body_regexp: "promotion.*101"
-    body_regexp: "promotion.*89232"
+    body_regexp: "promotion"
   actions:
+    request:
+      replace_body_component:
+        #- key: "\"promotionId\":\"88769\""
+        #  value: "\"promotionId\":\"106\"" 
+        - key: "\"excludeHfss\":true"
+          value: "\"excludeHfss\":false" 
     response:
       #file: "search/prod-product-incomplet-offers.json"
       #file: "search/acpt-wine-promo.json"
       #file: "search/acpt-87246.json"
-      file: "search/live.json"
+      #file: "search/live.json"
       #file: "search/acpt-86823.json"
       #file: "search/acpt-wine-promo-hammer.json"
       #file: "search/regular-promo.json"
@@ -240,19 +276,21 @@ rules:
 
 # slot-messages
 - interceptor:
-    url_regexp: "waitrose\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages\\?.*slotType=DELIVERY"
+    #url_regexp: "waitrose\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages\\?.*slotType=DELIVERY"
+    url_regexp: "waitrose\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages"
   actions:
-    request:
-      add_query_parameter:
-        - key: "clientType"
-          value: "MOBILE_APP"
+    #request:
+    #  add_query_parameter:
+    #    - key: "clientType"
+    #       value: "MOBILE_APP"
     response:
       #file_sequence: ["slot-experience/slot-experience-error.json", "slot-experience/slot-experience-informative.json", "slot-experience/slot-experience-success.json", "slot-experience/slot-experience-warning.json"]
-      #file: "slot-experience/slot-experience-informative.json"
+      file: "slot-experience/slot-experience-informative.json"
+      file: "slot-experience/live.json"
       #status_code: 400
       #body: ""
   marker: "grapes"
-  active: true
+  active: false
 
 - interceptor:
     url_regexp: "waitrose\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages\\?.*slotType=ENTERTAINING_COLLECTION"
@@ -278,6 +316,16 @@ rules:
       file: "products/live.json"
   active: false
 
+#products/recommendations
+- interceptor:
+    url_regexp: "waitrose\\.com/api/products-\\D{1,4}/v\\d/products/recommendations"
+  actions:
+    response:
+      #file: "products/recommendations/recommendations.json"
+      file: "products/recommendations/live.json"
+      #status_code: 400
+  active: true
+
 # view alternatives / similar 
 - interceptor:
     url_regexp: "waitrose\\.com/api/products-\\D{1,4}/v\\d/products\\?view=SUMMARY.*categoryId=\\d*"
@@ -285,7 +333,7 @@ rules:
     response:
       status_code: 400
       #file: "products/view-alternatives/live-empty.json"
-      file: "products/view-alternatives/live-killer.json"
+      #file: "products/view-alternatives/live-killer.json"
       #file: "products/view-alternatives/live-cake.json"
       #replace:
       #  replace: "totalResults\":27"
@@ -478,7 +526,8 @@ rules:
     url_regexp: ".*/api/taxonomy-entity.*/.*/taxonomy/waitrose-ecomm-groceries"
   actions:
     response:
-      file: "taxonomy/taxonomy.json"
+      #file: "taxonomy/taxonomy.json"
+      file: "taxonomy/live.json"
       #file_sequence: ["taxonomy/with_category.json", "taxonomy/without_category.json"]
   active: false
 
@@ -506,6 +555,25 @@ rules:
 #                          GRAPH                         #
 #                                                        #
 ##########################################################
+
+# book-slot
+- interceptor:
+    url_regexp: "waitrose\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=book-slot"
+  actions:
+    response:
+      file: "graph/book-slot/fully-booked.json"
+      #delay: 1
+  active: false
+
+# slot dates
+- interceptor:
+    url_regexp: "waitrose\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=slot-dates"
+  actions:
+    response:
+      file: "graph/slot-dates/live.json"
+      #delay: 1
+  active: false
+
 
 # campaigns
 - interceptor:
@@ -555,13 +623,13 @@ rules:
       #file: "graph/get-trolley/error-allow-subs-662-prod.json"
       #file: "graph/get-trolley/error-allow-subs-662-prod-v2.json"
       #file: "graph/get-trolley/view-similar.json"
-      #file: "graph/get-trolley/live.json"
+      file: "graph/get-trolley/live.json"
       #file: "graph/get-trolley/774-deposit-prod.json"
-      file: "graph/get-trolley/incomplete-offer-issue.json"
+      #file: "graph/get-trolley/incomplete-offer-issue.json"
       #replace:
         #replace: "NOT_ALLOWED"
         #replacement: "ALLOWED"
-  active: true
+  active: false
 
 # update-trolley-items
 - interceptor:

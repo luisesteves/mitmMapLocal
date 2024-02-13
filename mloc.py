@@ -21,9 +21,15 @@ class MockResponse:
     def mock_flow(self):
         self.signal = "start"
         logging.info("🌼 flow restart")
+    
+    @command.command("mock.zzz")
+    def mock_zzz(self):
+        self.bad_network = not self.bad_network
+        logging.info("🥱 bad network %s" % self.bad_network)
 
     def __init__(self):
         self.signal = "start"
+        self.bad_network = False
         self.response_sequence_index = 0
         
         self.configuration_file = "cfg.yaml"
@@ -110,9 +116,15 @@ class MockResponse:
         return {"intercepted": intercepted, "actions": actions}
 
     def request(self, flow):
+
         logging.info("🔼  Flow: %s" % flow.request.url)
         self.reload_configuration()
 
+        if not self.mock_toggle_state:
+            logging.info("❌ mLoc disable")
+            flow.marked = ":arrow_heading_down:"
+            return
+        
         intercepted = self.interceptor(flow)
 
         # if the request was intercepeted then, lets run the actions
@@ -135,7 +147,11 @@ class MockResponse:
             if "replace_body_component" in request_actions:
                 for query_parameter in request_actions["replace_body_component"]:
                     content = flow.request.text
+                    logging.info(">>>> key  %s", str(query_parameter["key"]))
+                    logging.info(">>>> %s", str(query_parameter["value"]))
                     flow.request.content = str.encode(re.sub(query_parameter["key"], query_parameter["value"], content))
+            if "replace_body" in request_actions:
+                flow.request.content = str.encode(request_actions["replace_body"])
             if "add_header_request" in request_actions:
                 for header in request_actions["add_header_request"]:
                     flow.request.headers[header["key"]] = header["value"]
@@ -163,6 +179,7 @@ class MockResponse:
             return data
         
         logging.info("⬇️  Flow: %s" % flow.request.url)
+
         self.reload_configuration()
 
         # if not self.mock_configuration["enable"]:
@@ -235,5 +252,9 @@ class MockResponse:
                     for fild in save_actions:
                         file.write(flow.request.headers[fild] + "\n")
                     file.write("\n")
+        
+        if self.bad_network:
+            flow.marked = ":zzz:"
+            sleep(1)
 
 addons = [MockResponse()]
