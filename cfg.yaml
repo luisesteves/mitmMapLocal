@@ -70,6 +70,14 @@ rules:
           new_key: "Allow"
   active: false
 
+#adresses address-prod/v2/addresses
+- interceptor:
+    url_regexp: "waitrose\\.com/api/address-\\D{2,4}/v\\d/addresses\\?"
+  actions:
+    response:
+      file: "addresses/live.json"
+  active: false
+
 # branches
 - interceptor:
     url_regexp: "waitrose\\.com/api/branch-\\D{2,4}/v\\d/branches\\?fulfilment_type=COLLECTION"
@@ -182,7 +190,8 @@ rules:
     url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products\\?.*showRecommendations=true"
   actions:
     response:
-      file: "products/chosen-for-you.json"
+      remove_header: "metadata"
+      #file: "products/chosen-for-you.json"
   active: false
 
 #new lower price
@@ -211,26 +220,27 @@ rules:
 
 ##########################################################
 
-#products - order details - SFTO
+#products - order details - SFTO - meal deals 
 - interceptor:
     url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products/\\d{6}.*"
   actions:
     response:
       #file: "products/live.json"
-      file: "products/order-view-similar.json"
+      #file: "products/order-view-similar.json"
+      file: "products/meal-deals.json"
   active: false
 
 #productcontent/ search feature
 - interceptor:
     url_regexp: "waitrose\\.com/api/content-\\D{2,4}/v\\d/cms/publish/productcontent/search/\\d*"
   actions:
-    #request:
+    request:
       #replace_body: "{\"customerSearchRequest\":{\"queryParams\":{\"size\":48,\"category\":\"234676\",\"searchTerm\":\"\",\"sortBy\":\"RELEVANCE\",\"searchTags\":[{\"group\":\"CUSTOM\",\"text\":\"Yoghurt\"}],\"filterTags\":[{\"id\":\"suitableforthoseavoidingmilkfilter\",\"value\":\"Suitable_for_those_avoiding_milk\"}],\"orderId\":\"0\",\"categoryLevel\":1}}}"
       #replace_body: "{\"customerSearchRequest\":{\"queryParams\":{\"size\":48,\"category\":\"234676\",\"searchTerm\":\"\",\"sortBy\":\"RELEVANCE\",\"searchTags\":[{\"group\":\"CUSTOM\",\"text\":\"Yoghurt\"}],\"filterTags\":[{\"id\":\"suitableforthoseavoidingmilkfilter\",\"value\":\"Suitable_for_those_avoiding_milk\"}],\"orderId\":\"0\",\"categoryLevel\":1}}}"
       #replace_body: "{\"customerSearchRequest\":{\"queryParams\":{\"category\":\"234676\",\"categoryLevel\":1,\"filterTags\":[{\"count\":35,\"id\":\"suitableforthoseavoidingmilkfilter\",\"text\":\"No Milk\",\"value\":\"Suitable_for_those_avoiding_milk\"}],\"orderId\":\"0\",\"searchTags\":[{\"group\":\"CUSTOM\",\"text\":\"Yoghurt\"}],\"searchTerm\":\"yoghurt\",\"sortBy\":\"RELEVANCE\"}}}"
       # replace_body_component: 
-      #   - key: "\"searchTags\":\\[\\]"
-      #     value: "\"searchTags\":[{\"group\": \"CUSTOM\",\"text\": \"Yoghurt\"}]"
+      #   - key: "\"start\":21"
+      #     value: "\"start\":24"
       #   - key: "\"searchTerm\":\"yoghurt\""
       #     value: "\"searchTerm\":\"\""
     response:
@@ -316,7 +326,7 @@ rules:
       file: "products/live.json"
   active: false
 
-#products/recommendations
+#products/recommendations / favourites
 - interceptor:
     url_regexp: "waitrose\\.com/api/products-\\D{1,4}/v\\d/products/recommendations"
   actions:
@@ -324,7 +334,7 @@ rules:
       #file: "products/recommendations/recommendations.json"
       file: "products/recommendations/live.json"
       #status_code: 400
-  active: true
+  active: false
 
 # view alternatives / similar 
 - interceptor:
@@ -589,8 +599,8 @@ rules:
     url_regexp: ".*waitrose.com/api/graphql-.*/graph/live\\?tag=get-home-orders"
   actions:
     response:
-      file: "graph/get-home-orders/acpt-774.json"
-  active: false
+      file: "graph/get-home-orders/live.json"
+  active: false 
 
 # slot-charges
 - interceptor:
@@ -620,24 +630,37 @@ rules:
     url_regexp: "waitrose\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=get-trolley"
   actions:
     response:
+      #status_code: 500
+      #body: ""
+      #file: "trolley/get/WGA-12428.json"
+      file: "trolley/get/wga-12428-1.json"
+      #file: "trolley/get/luciano.json"
+      #file: "graph/get-trolley/error.json"
       #file: "graph/get-trolley/error-allow-subs-662-prod.json"
       #file: "graph/get-trolley/error-allow-subs-662-prod-v2.json"
       #file: "graph/get-trolley/view-similar.json"
-      file: "graph/get-trolley/live.json"
+      #file: "graph/get-trolley/live.json"
       #file: "graph/get-trolley/774-deposit-prod.json"
       #file: "graph/get-trolley/incomplete-offer-issue.json"
-      #replace:
-        #replace: "NOT_ALLOWED"
-        #replacement: "ALLOWED"
-  active: false
+      # replace:
+      #   replace: "\"1001039116\""
+      #   replacement: "null"
+  active: true
 
 # update-trolley-items
 - interceptor:
     url_regexp: "waitrose\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=update-trolley-items"
   actions:
+    # request:
+    #   replace_body_component:
+    #     - key: "Test"
+    #       value: "luís" 
     response:
-      file: "graph/update-trolley-items/view-similar.json"
-      #delay: 20
+      status_code: 500
+      body: ""
+      #file: "graph/update-trolley-items/live.json"
+      #file: "graph/update-trolley-items/view-similar.json"
+      #delay: 30
   active: false
 
 

@@ -20,12 +20,12 @@ class MockResponse:
     @command.command("mock.flow")
     def mock_flow(self):
         self.signal = "start"
-        logging.info("🌼 flow restart")
+        logging.warning("🌼 flow restart")
     
     @command.command("mock.zzz")
     def mock_zzz(self):
         self.bad_network = not self.bad_network
-        logging.info("🥱 bad network %s" % self.bad_network)
+        logging.warning("🥱 bad network %s" % self.bad_network)
 
     def __init__(self):
         self.signal = "start"
@@ -218,7 +218,7 @@ class MockResponse:
                 for header in response_actions["add_header"]:
                     flow.response.headers[header["key"]] = header["value"]
             if "remove_header" in response_actions:
-                flow.response.headers.remove(response_actions["remove_header"])
+                flow.response.headers.pop(response_actions["remove_header"])
             if "change_header_key" in response_actions:
                 for header in response_actions["change_header_key"]:
                     value = flow.response.headers[header["key"]]
