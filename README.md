@@ -26,29 +26,54 @@ start the proxy
 
 ```yaml
 enable: true
-mock_directory: "<path to your mock folder>"
+mock_directory: "/Users/esteves/Mindera/PROXY"
 rules:
 #example
 - interceptor:
     url_regexp: ".*waitrose.*/api/favourites2-.*/v\n/favourites"
-    signal: "start"
+    header_key: "allow"
+    method: "POST"
+
   actions:
-    response_file: "<relative path>/favourites.json"
-    response_file_sequence: ["file-a", "file-b", "file-c"]
-    response_file_random: ["file-a", "file-b", "file-c"]
-    response_body: "{}"
-    signal: "stop"
-    add_header_request:
-      key: "key"
-      value: "value"
-    status_code: 200
-    delay: 2
-    add_header:
-       - key: "<key>"
-         value: "<value>"
-    save:
-      request:
-        - "authorization"
+    request:
+      delay: 5
+      add_query_parameter:
+        - key: "<key>"
+          value: "<value>"
+      change_query_parameter:
+        - key: "<key>"
+          value: "<value>"
+      replace_url_component:
+        - key: "<key>"
+          value: "<value>" 
+      replace_body_component:
+        - key: "<key>"
+          value: "<value>" 
+      replace_body: "{}"
+      add_header:
+        - key: "<key>"
+          value: "<value>"
+      save:
+        - "header"
+        - "cookie"
+    response:
+      file: "favourites/favourites.json"
+      file_sequence: ["FileA", "FileB", "FileC"]
+      add_header:
+        - key: "<key>"
+          value: "<value>"
+      remove_header: "<key>"
+      change_header_key:
+        - key: "<key>"
+          new_key: "<value>"
+      body: "{}"
+      delay: 5
+      status_code: 200
+      replace:
+        replace: "regex"
+        replacement: "string"
+      save:
+        - "header"
         - "cookie"
   marker: "https://api.github.com/emojis"
   active: false
