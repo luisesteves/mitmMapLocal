@@ -1,21 +1,54 @@
 import re
 import json
-from mitmproxy import ctx, http, command
+from collections.abc import Sequence
+from mitmproxy import ctx, http, command, flow
 import yaml
 import os
 import logging
 from time import sleep
 import random 
 from datetime import datetime
-import os
 import emoji
+from typing import Optional
 
 class MockResponse:
     
+    # @command.command("mock.switch")
+    # def switch(self, flow: flow.Flow):
+    #     self.rule_switch = flow.request.url
+
+    #     for rule in self.mock_configuration["rules"]:
+    #         interceptor = rule["interceptor"]
+
+    #         for filter, filter_value in interceptor.items():
+    #             if filter == "url_regexp" and re.search(filter_value, flow.request.url):
+    #                 if rule["active"]:
+    #                     rule["rule_switch"] = not rule.get("rule_switch", True)
+    #                     logging.warning("🎚️ switch : %s - %s" % (filter_value, rule["rule_switch"]))
+
+
+    @command.command("mock.t")
+    def mock_t(self, flow: flow.Flow, emoji: str):
+        flow.marked = f":{emoji}:"
+
+    @command.command("mock.error")
+    def mock_error(self, flow: flow.Flow, error: int):
+        logging.warning(f"❌  mock error")
+        self.fast_error_switch.update({flow.request.url: error})
+        logging.warning(self.fast_error_switch)
+        if error == 0:
+            self.fast_error_switch = {}
+            logging.warning("clear")
+
+    @command.command("mock.find")
+    def mock_find(self, term: str):
+        logging.warning(f"⏺️  search: {term}")
+        self.mock_search = term
+
     @command.command("mock.toggle")
     def mock_toggle(self):
         self.mock_toggle_state = not self.mock_toggle_state
-        logging.warning("⏺️  mock toggle: %s" % self.mock_toggle_state)
+        logging.warning(f"⏺️  mock toggle: {self.mock_toggle_state}")
 
     @command.command("mock.flow")
     def mock_flow(self):
@@ -25,7 +58,7 @@ class MockResponse:
     @command.command("mock.zzz")
     def mock_zzz(self):
         self.bad_network = not self.bad_network
-        logging.warning("🥱 bad network %s" % self.bad_network)
+        logging.warning(f"🥱 bad network {self.bad_network}")
 
     def __init__(self):
         self.signal = "start"
@@ -36,6 +69,10 @@ class MockResponse:
         self.cfg_modified_timestamp = os.path.getmtime(self.configuration_file)
         self.loaded = False
         self.mock_toggle_state = False
+        self.mock_search = ""
+        self.rule_switch = ""
+        self.response_from_file_header = "__f_r_o_m__f_i_le__"
+        self.fast_error_switch = {}
     
     def read_configuration(self):
         try:
@@ -56,17 +93,19 @@ class MockResponse:
     def interceptor(self, flow):
         #intercept the request with the all the interception rules
         for rule in self.mock_configuration["rules"]:
-            #logging.info("✍️ rule: %s" % str(rule))
+            #logging.info(f"✍️ rule: {rule}")
             interceptor = rule["interceptor"]
             actions = rule["actions"]
             marker = rule["marker"] if "marker" in rule else "heavy_exclamation_mark"
             intercepted = False
             
-            if not rule["active"]:
+            if not rule.get("active", False) :
                 continue
-
+            elif not rule.get("rule_switch", True):
+                continue
+            
             def log_filter(filter):
-                logging.info("🔴 intercepted \"%s\" " % (filter))
+                logging.info(f"🔴 intercepted \"{filter}\"")
 
             for filter, filter_value in interceptor.items():
                 if filter == "url_regexp":
@@ -111,13 +150,14 @@ class MockResponse:
                         break
             if intercepted:
                 # we dont need to continue to try other rules
-                flow.marked = ":%s:" % marker
+                flow.marked = f":{marker}:"
+                # flow.request.url += "  #########"
                 break
+
         return {"intercepted": intercepted, "actions": actions}
 
     def request(self, flow):
-
-        logging.info("🔼  Flow: %s" % flow.request.url)
+        logging.info(f"🔼  Flow: {flow.request.url}")
         self.reload_configuration()
 
         if not self.mock_toggle_state:
@@ -131,7 +171,7 @@ class MockResponse:
         if intercepted["intercepted"] and "request" in intercepted["actions"] and intercepted["actions"]["request"] is not None:
 
             request_actions = intercepted["actions"]["request"]
-            logging.info("🪛  %s", str(request_actions))
+            logging.info(f"🪛  {request_actions}")
             if "delay" in request_actions:
                 logging.info("🕓")
                 sleep(request_actions["delay"])
@@ -147,8 +187,8 @@ class MockResponse:
             if "replace_body_component" in request_actions:
                 for query_parameter in request_actions["replace_body_component"]:
                     content = flow.request.text
-                    logging.info(">>>> key  %s", str(query_parameter["key"]))
-                    logging.info(">>>> %s", str(query_parameter["value"]))
+                    logging.info(f">>>> key  {query_parameter['key']}")
+                    logging.info(f">>>> {query_parameter['value']}")
                     flow.request.content = str.encode(re.sub(query_parameter["key"], query_parameter["value"], content))
             if "replace_body" in request_actions:
                 flow.request.content = str.encode(request_actions["replace_body"])
@@ -161,24 +201,25 @@ class MockResponse:
                     for fild in save_actions:
                         file.write(flow.request.headers[fild] + "\n")
                     file.write("\n")
+        else:
+            flow.marked = ""
+            if self.response_from_file_header in flow.request.headers:
+                flow.request.headers.pop(self.response_from_file_header)
         
     def response(self, flow):
-
+        logging.info(f"⬇️  Flow: {flow.request.url}")
+        
         def read_file(filename):
-            data = ""
             try:
-                absPath = os.path.abspath("%s/%s" % (self.mock_configuration["mock_directory"], filename))
-                data = open(absPath).read()
+                abs_path = os.path.abspath(f"{self.mock_configuration['mock_directory']}/{filename}")
+                return open(abs_path).read()
             except IOError:
                 try:
-                    absPath = os.path.abspath(filename)
-                    data = open(absPath).read()
+                    abs_path = os.path.abspath(filename)
+                    return open(abs_path).read()
                 except IOError:
                     data = "{file could not be found}"
                 return data
-            return data
-        
-        logging.info("⬇️  Flow: %s" % flow.request.url)
 
         self.reload_configuration()
 
@@ -195,21 +236,19 @@ class MockResponse:
         # if the request was intercepeted then, lets run the actions
         if intercepted["intercepted"] and "response" in intercepted["actions"] and intercepted["actions"]["response"] is not None:
             response_actions = intercepted["actions"]["response"]
-            logging.info("🪛  %s", str(response_actions))
+            logging.info(f"🪛  {response_actions}")
 
-            response_from_file_header = "__f_r_o_m__f_i_le__"
             if "file" in response_actions:
                 file = response_actions["file"]
-                flow.request.headers[response_from_file_header] = file
-                flow.response.headers[response_from_file_header] = file
+                flow.request.headers[self.response_from_file_header] = file
+                flow.response.headers[self.response_from_file_header] = file
                 flow.response.content = str.encode(read_file(file))
             if "body" in response_actions:
                 #logging.info("🪛  body")
                 flow.response.content = str.encode(response_actions["body"])
             if "replace" in response_actions:
-                replace_cfg = response_actions["replace"]
-                replace = replace_cfg["replace"]
-                replacement = replace_cfg["replacement"]
+                replace = response_actions["replace"]
+                replacement = response_actions["replacement"]
                 content = flow.response.text
                 flow.response.content = str.encode(re.sub(replace, replacement, content))
             if "status_code" in response_actions:
@@ -222,13 +261,13 @@ class MockResponse:
             if "change_header_key" in response_actions:
                 for header in response_actions["change_header_key"]:
                     value = flow.response.headers[header["key"]]
-                    logging.info("👺  %s", str(value))
+                    logging.info(f"👺  {value}")
                     flow.response.headers.pop(header["key"])
                     flow.response.headers[header["new_key"]] = value
             if "file_sequence" in response_actions:
                 file = response_actions["file_sequence"][self.response_sequence_index]
-                flow.request.headers[response_from_file_header] = file
-                flow.response.headers[response_from_file_header] = file
+                flow.request.headers[self.response_from_file_header] = file
+                flow.response.headers[self.response_from_file_header] = file
                 flow.response.content = str.encode(read_file(file))
                 if self.response_sequence_index == len(response_actions["file_sequence"]) - 1:
                     self.response_sequence_index = 0
@@ -237,12 +276,12 @@ class MockResponse:
             if "file_random" in response_actions:
                 randomIndex = random.randint(0, len(response_actions["file_random"]) - 1)
                 file = response_actions["file_random"][randomIndex]
-                flow.request.headers[response_from_file_header] = file
-                flow.response.headers[response_from_file_header] = file
+                flow.request.headers[self.response_from_file_header] = file
+                flow.response.headers[self.response_from_file_header] = file
                 flow.response.content = str.encode(read_file(file))
             if "signal" in response_actions:
                 self.signal = response_actions["signal"]
-                logging.info("🚦 %s", self.signal)
+                logging.info(f"🚦 {self.signal}")
             if "delay" in response_actions:
                 logging.info("🕓")
                 sleep(response_actions["delay"])
@@ -252,9 +291,26 @@ class MockResponse:
                     for fild in save_actions:
                         file.write(flow.request.headers[fild] + "\n")
                     file.write("\n")
+            if "search" in response_actions:
+                logging.info("🔍")
+                if re.search(response_actions["search"], flow.response.text):
+                    logging.warning(f"🔍 '{response_actions['search']}'found")
+        
+
+        for key in self.fast_error_switch:
+           if key == flow.request.url:
+                logging.info("❌✅ applying error state")
+                flow.response.status_code = self.fast_error_switch[key]
+    
+        if self.mock_search != "":
+            logging.info("🔍")
+            if re.search(self.mock_search, flow.response.text):
+                logging.warning(f"🔍 '{self.mock_search}'found")
+                flow.marked = ":eye:"
         
         if self.bad_network:
             flow.marked = ":zzz:"
             sleep(1)
 
 addons = [MockResponse()]
+
