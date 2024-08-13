@@ -8,9 +8,19 @@ import logging
 from time import sleep
 import random 
 from datetime import datetime
-import emoji
+from mitmproxy.utils import emoji
 from typing import Optional
 
+@command.command("all.markers")
+def all_markers():
+    "Create a new flow showing all marker values"
+    for marker in emoji.emoji:
+        ctx.master.commands.call(
+            "view.flows.create", "get", f"https://example.com/{marker}"
+        )
+        ctx.master.commands.call("flow.mark", [ctx.master.view[-1]], marker)
+
+        
 class MockResponse:
     
     # @command.command("mock.switch")
@@ -26,18 +36,19 @@ class MockResponse:
     #                     rule["rule_switch"] = not rule.get("rule_switch", True)
     #                     logging.warning("🎚️ switch : %s - %s" % (filter_value, rule["rule_switch"]))
 
-
     @command.command("mock.t")
     def mock_t(self, flow: flow.Flow, emoji: str):
         flow.marked = f":{emoji}:"
 
     @command.command("mock.error")
-    def mock_error(self, flow: flow.Flow, error: int):
+    # def mock_error(self, flow: flow.Flow, error: int):
+    def mock_error(self, error: int):
         logging.warning(f"❌  mock error")
-        self.fast_error_switch.update({flow.request.url: error})
-        logging.warning(self.fast_error_switch)
+        # self.hard_error_switch.update({flow.request.url: error})
+        self.hard_error_switch.update({ctx.master.view.focus.flow.request.url: error})
+        logging.warning(self.hard_error_switch)
         if error == 0:
-            self.fast_error_switch = {}
+            self.hard_error_switch = {}
             logging.warning("clear")
 
     @command.command("mock.find")
@@ -72,7 +83,7 @@ class MockResponse:
         self.mock_search = ""
         self.rule_switch = ""
         self.response_from_file_header = "__f_r_o_m__f_i_le__"
-        self.fast_error_switch = {}
+        self.hard_error_switch = {}
     
     def read_configuration(self):
         try:
@@ -223,13 +234,15 @@ class MockResponse:
 
         self.reload_configuration()
 
-        # if not self.mock_configuration["enable"]:
-        #     logging.info("❌ mLoc disable")
-        #     return
-
         if not self.mock_toggle_state:
             logging.info("❌ mLoc disable")
             return
+        
+        for key in self.hard_error_switch:
+           if key == flow.request.url:
+                logging.info("❌✅ applying error state")
+                flow.response.status_code = self.hard_error_switch[key]
+                return
 
         intercepted = self.interceptor(flow)
 
@@ -293,19 +306,17 @@ class MockResponse:
                     file.write("\n")
             if "search" in response_actions:
                 logging.info("🔍")
-                if re.search(response_actions["search"], flow.response.text):
-                    logging.warning(f"🔍 '{response_actions['search']}'found")
-        
-
-        for key in self.fast_error_switch:
-           if key == flow.request.url:
-                logging.info("❌✅ applying error state")
-                flow.response.status_code = self.fast_error_switch[key]
+                match = re.search(response_actions["search"], flow.response.text)
+                if match:
+                    logging.warning(f"🔍 '{match.group()}' found")
     
         if self.mock_search != "":
             logging.info("🔍")
-            if re.search(self.mock_search, flow.response.text):
-                logging.warning(f"🔍 '{self.mock_search}'found")
+            matches = re.finditer(self.mock_search, flow.response.text)
+            # match = re.search(self.mock_search, flow.response.text)
+            for match in matches:
+                # logging.warning(f"🔍 '{match.group()}' found")
+                logging.warning(f"🔍 '{match.group()}'")
                 flow.marked = ":eye:"
         
         if self.bad_network:
