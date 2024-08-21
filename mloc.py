@@ -20,8 +20,55 @@ def all_markers():
         )
         ctx.master.commands.call("flow.mark", [ctx.master.view[-1]], marker)
 
-        
 class MockResponse:
+
+    # Constants for configuration and interception rules
+    KEY_URL_REGEXP = "url_regexp"
+    KEY_BODY_REGEXP = "body_regexp"
+    KEY_HEADER_KEY = "header_key"
+    KEY_METHOD = "method"
+    KEY_SIGNAL = "signal"
+    KEY_INTERCEPTOR = "interceptor"
+    KEY_ACTIONS = "actions"
+    KEY_MARKER = "marker"
+    KEY_ACTIVE = "active"
+    KEY_RULE_SWITCH = "rule_switch"
+
+    # Constants for intercepted actions
+    KEY_INTERCEPTED = "intercepted"
+    KEY_ACTIONS = "actions"
+    KEY_REQUEST = "request"
+    KEY_RESPONSE = "response"
+
+    # Constants for intercepted and response actions
+    KEY_INTERCEPTED = "intercepted"
+    KEY_ACTIONS = "actions"
+    KEY_RESPONSE = "response"
+
+    # Constants for response actions keys
+    KEY_FILE = "file"
+    KEY_BODY = "body"
+    KEY_REPLACE = "replace"
+    KEY_REPLACEMENT = "replacement"
+    KEY_STATUS_CODE = "status_code"
+    KEY_ADD_HEADER = "add_header"
+    KEY_REMOVE_HEADER = "remove_header"
+    KEY_CHANGE_HEADER_KEY = "change_header_key"
+    KEY_NEW_KEY = "new_key"
+    KEY_FILE_SEQUENCE = "file_sequence"
+    KEY_FILE_RANDOM = "file_random"
+    KEY_SIGNAL = "signal"
+    KEY_DELAY = "delay"
+    KEY_SAVE = "save"
+    KEY_SEARCH = "search"
+
+    KEY_ADD_QUERY_PARAMETER = "add_query_parameter"
+    KEY_CHANGE_QUERY_PARAMETER = "change_query_parameter"
+    KEY_REPLACE_URL_COMPONENT = "replace_url_component"
+    KEY_REPLACE_BODY_COMPONENT = "replace_body_component"
+    KEY_REPLACE_BODY = "replace_body"
+    KEY_ADD_HEADER_REQUEST = "add_header_request"
+
     
     # @command.command("mock.switch")
     # def switch(self, flow: flow.Flow):
@@ -65,7 +112,7 @@ class MockResponse:
     def mock_flow(self):
         self.signal = "start"
         logging.warning("🌼 flow restart")
-    
+
     @command.command("mock.zzz")
     def mock_zzz(self):
         self.bad_network = not self.bad_network
@@ -75,7 +122,7 @@ class MockResponse:
         self.signal = "start"
         self.bad_network = False
         self.response_sequence_index = 0
-        
+
         self.configuration_file = "cfg.yaml"
         self.cfg_modified_timestamp = os.path.getmtime(self.configuration_file)
         self.loaded = False
@@ -84,6 +131,7 @@ class MockResponse:
         self.rule_switch = ""
         self.response_from_file_header = "__f_r_o_m__f_i_le__"
         self.hard_error_switch = {}
+        self.hard_delay = {}
     
     def read_configuration(self):
         try:
@@ -102,24 +150,24 @@ class MockResponse:
             self.mock_toggle_state = self.mock_configuration["enable"]
 
     def interceptor(self, flow):
-        #intercept the request with the all the interception rules
+        # Intercept the request with all the interception rules
         for rule in self.mock_configuration["rules"]:
-            #logging.info(f"✍️ rule: {rule}")
-            interceptor = rule["interceptor"]
-            actions = rule["actions"]
-            marker = rule["marker"] if "marker" in rule else "heavy_exclamation_mark"
+            # logging.info(f"✍️ rule: {rule}")
+            interceptor = rule[self.KEY_INTERCEPTOR]
+            actions = rule[self.KEY_ACTIONS]
+            marker = rule.get(self.KEY_MARKER, "heavy_exclamation_mark")
             intercepted = False
-            
-            if not rule.get("active", False) :
+
+            if not rule.get(self.KEY_ACTIVE, False):
                 continue
-            elif not rule.get("rule_switch", True):
+            elif not rule.get(self.KEY_RULE_SWITCH, True):
                 continue
-            
+
             def log_filter(filter):
                 logging.info(f"🔴 intercepted \"{filter}\"")
 
             for filter, filter_value in interceptor.items():
-                if filter == "url_regexp":
+                if filter == self.KEY_URL_REGEXP:
                     if re.search(filter_value, flow.request.url):
                         log_filter(filter)
                         intercepted = True
@@ -127,7 +175,7 @@ class MockResponse:
                     else:
                         intercepted = False
                         break
-                if filter == "body_regexp":
+                if filter == self.KEY_BODY_REGEXP:
                     if re.search(filter_value, flow.request.content.decode("utf-8")):
                         log_filter(filter)
                         intercepted = True
@@ -135,7 +183,7 @@ class MockResponse:
                     else:
                         intercepted = False
                         break
-                if filter == "header_key":
+                if filter == self.KEY_HEADER_KEY:
                     if filter_value in flow.response.headers:
                         log_filter(filter)
                         intercepted = True
@@ -143,7 +191,7 @@ class MockResponse:
                     else:
                         intercepted = False
                         break
-                if filter == "method":
+                if filter == self.KEY_METHOD:
                     if filter_value == flow.request.method:
                         log_filter(filter)
                         intercepted = True
@@ -151,7 +199,7 @@ class MockResponse:
                     else:
                         intercepted = False
                         break
-                if filter == "signal":
+                if filter == self.KEY_SIGNAL:
                     if filter_value == self.signal:
                         log_filter(filter)
                         intercepted = True
@@ -159,6 +207,7 @@ class MockResponse:
                     else:
                         intercepted = False
                         break
+
             if intercepted:
                 # we dont need to continue to try other rules
                 flow.marked = f":{marker}:"
@@ -175,42 +224,50 @@ class MockResponse:
             logging.info("❌ mLoc disable")
             flow.marked = ":arrow_heading_down:"
             return
-        
+
         intercepted = self.interceptor(flow)
 
-        # if the request was intercepeted then, lets run the actions
-        if intercepted["intercepted"] and "request" in intercepted["actions"] and intercepted["actions"]["request"] is not None:
+        # if the request was intercepted then, let's run the actions
+        if intercepted[self.KEY_INTERCEPTED] and self.KEY_REQUEST in intercepted[self.KEY_ACTIONS] and intercepted[self.KEY_ACTIONS][self.KEY_REQUEST] is not None:
 
-            request_actions = intercepted["actions"]["request"]
+            request_actions = intercepted[self.KEY_ACTIONS][self.KEY_REQUEST]
             logging.info(f"🪛  {request_actions}")
-            if "delay" in request_actions:
+
+            if self.KEY_DELAY in request_actions:
                 logging.info("🕓")
-                sleep(request_actions["delay"])
-            if "add_query_parameter" in request_actions:
-                for query_parameter in request_actions["add_query_parameter"]:
+                sleep(request_actions[self.KEY_DELAY])
+
+            if self.KEY_ADD_QUERY_PARAMETER in request_actions:
+                for query_parameter in request_actions[self.KEY_ADD_QUERY_PARAMETER]:
                     flow.request.query[query_parameter["key"]] = query_parameter["value"]
-            if "change_query_parameter" in request_actions:
-                for query_parameter in request_actions["change_query_parameter"]:
+
+            if self.KEY_CHANGE_QUERY_PARAMETER in request_actions:
+                for query_parameter in request_actions[self.KEY_CHANGE_QUERY_PARAMETER]:
                     flow.request.query[query_parameter["key"]] = query_parameter["value"]
-            if "replace_url_component" in request_actions:
-                for query_parameter in request_actions["replace_url_component"]:
+
+            if self.KEY_REPLACE_URL_COMPONENT in request_actions:
+                for query_parameter in request_actions[self.KEY_REPLACE_URL_COMPONENT]:
                     flow.request.url = flow.request.url.replace(query_parameter["key"], query_parameter["value"])
-            if "replace_body_component" in request_actions:
-                for query_parameter in request_actions["replace_body_component"]:
+
+            if self.KEY_REPLACE_BODY_COMPONENT in request_actions:
+                for query_parameter in request_actions[self.KEY_REPLACE_BODY_COMPONENT]:
                     content = flow.request.text
                     logging.info(f">>>> key  {query_parameter['key']}")
                     logging.info(f">>>> {query_parameter['value']}")
                     flow.request.content = str.encode(re.sub(query_parameter["key"], query_parameter["value"], content))
-            if "replace_body" in request_actions:
-                flow.request.content = str.encode(request_actions["replace_body"])
-            if "add_header_request" in request_actions:
-                for header in request_actions["add_header_request"]:
+
+            if self.KEY_REPLACE_BODY in request_actions:
+                flow.request.content = str.encode(request_actions[self.KEY_REPLACE_BODY])
+
+            if self.KEY_ADD_HEADER_REQUEST in request_actions:
+                for header in request_actions[self.KEY_ADD_HEADER_REQUEST]:
                     flow.request.headers[header["key"]] = header["value"]
-            if "save" in request_actions:
-                save_actions = request_actions["save"]
+
+            if self.KEY_SAVE in request_actions:
+                save_actions = request_actions[self.KEY_SAVE]
                 with open('save.txt', 'a') as file:
-                    for fild in save_actions:
-                        file.write(flow.request.headers[fild] + "\n")
+                    for field in save_actions:
+                        file.write(flow.request.headers[field] + "\n")
                     file.write("\n")
         else:
             flow.marked = ""
@@ -218,8 +275,9 @@ class MockResponse:
                 flow.request.headers.pop(self.response_from_file_header)
         
     def response(self, flow):
+
         logging.info(f"⬇️  Flow: {flow.request.url}")
-        
+
         def read_file(filename):
             try:
                 abs_path = os.path.abspath(f"{self.mock_configuration['mock_directory']}/{filename}")
@@ -232,12 +290,19 @@ class MockResponse:
                     data = "{file could not be found}"
                 return data
 
+        def find(flow, pattern, string):
+            logging.info("🔍")
+            matches = re.finditer(self.mock_search, flow.response.text)
+            for match in matches:
+                logging.warning(f"🔍 found: '{match.group()}'")
+                flow.marked = ":eye:"
+
         self.reload_configuration()
 
         if not self.mock_toggle_state:
             logging.info("❌ mLoc disable")
             return
-        
+
         for key in self.hard_error_switch:
            if key == flow.request.url:
                 logging.info("❌✅ applying error state")
@@ -247,78 +312,81 @@ class MockResponse:
         intercepted = self.interceptor(flow)
 
         # if the request was intercepeted then, lets run the actions
-        if intercepted["intercepted"] and "response" in intercepted["actions"] and intercepted["actions"]["response"] is not None:
-            response_actions = intercepted["actions"]["response"]
+        # Check if the request was intercepted and run the actions
+        if intercepted[self.KEY_INTERCEPTED] and self.KEY_RESPONSE in intercepted[self.KEY_ACTIONS] and intercepted[self.KEY_ACTIONS][self.KEY_RESPONSE] is not None:
+            response_actions = intercepted[self.KEY_ACTIONS][self.KEY_RESPONSE]
             logging.info(f"🪛  {response_actions}")
 
-            if "file" in response_actions:
-                file = response_actions["file"]
+            if self.KEY_FILE in response_actions:
+                file = response_actions[self.KEY_FILE]
                 flow.request.headers[self.response_from_file_header] = file
                 flow.response.headers[self.response_from_file_header] = file
                 flow.response.content = str.encode(read_file(file))
-            if "body" in response_actions:
-                #logging.info("🪛  body")
-                flow.response.content = str.encode(response_actions["body"])
-            if "replace" in response_actions:
-                replace = response_actions["replace"]
-                replacement = response_actions["replacement"]
+
+            if self.KEY_BODY in response_actions:
+                flow.response.content = str.encode(response_actions[self.KEY_BODY])
+
+            if self.KEY_REPLACE in response_actions:
+                replace = response_actions[self.KEY_REPLACE]
+                replacement = response_actions[self.KEY_REPLACEMENT]
                 content = flow.response.text
                 flow.response.content = str.encode(re.sub(replace, replacement, content))
-            if "status_code" in response_actions:
-                flow.response.status_code = response_actions["status_code"]
-            if "add_header" in response_actions:
-                for header in response_actions["add_header"]:
+
+            if self.KEY_STATUS_CODE in response_actions:
+                flow.response.status_code = response_actions[self.KEY_STATUS_CODE]
+
+            if self.KEY_ADD_HEADER in response_actions:
+                for header in response_actions[self.KEY_ADD_HEADER]:
                     flow.response.headers[header["key"]] = header["value"]
-            if "remove_header" in response_actions:
-                flow.response.headers.pop(response_actions["remove_header"])
-            if "change_header_key" in response_actions:
-                for header in response_actions["change_header_key"]:
+
+            if self.KEY_REMOVE_HEADER in response_actions:
+                flow.response.headers.pop(response_actions[self.KEY_REMOVE_HEADER])
+
+            if self.KEY_CHANGE_HEADER_KEY in response_actions:
+                for header in response_actions[self.KEY_CHANGE_HEADER_KEY]:
                     value = flow.response.headers[header["key"]]
                     logging.info(f"👺  {value}")
                     flow.response.headers.pop(header["key"])
-                    flow.response.headers[header["new_key"]] = value
-            if "file_sequence" in response_actions:
-                file = response_actions["file_sequence"][self.response_sequence_index]
+                    flow.response.headers[header[self.KEY_NEW_KEY]] = value
+
+            if self.KEY_FILE_SEQUENCE in response_actions:
+                file = response_actions[self.KEY_FILE_SEQUENCE][self.response_sequence_index]
                 flow.request.headers[self.response_from_file_header] = file
                 flow.response.headers[self.response_from_file_header] = file
                 flow.response.content = str.encode(read_file(file))
-                if self.response_sequence_index == len(response_actions["file_sequence"]) - 1:
+                if self.response_sequence_index == len(response_actions[self.KEY_FILE_SEQUENCE]) - 1:
                     self.response_sequence_index = 0
                 else:
                     self.response_sequence_index += 1
-            if "file_random" in response_actions:
-                randomIndex = random.randint(0, len(response_actions["file_random"]) - 1)
-                file = response_actions["file_random"][randomIndex]
+
+            if self.KEY_FILE_RANDOM in response_actions:
+                randomIndex = random.randint(0, len(response_actions[self.KEY_FILE_RANDOM]) - 1)
+                file = response_actions[self.KEY_FILE_RANDOM][randomIndex]
                 flow.request.headers[self.response_from_file_header] = file
                 flow.response.headers[self.response_from_file_header] = file
                 flow.response.content = str.encode(read_file(file))
-            if "signal" in response_actions:
-                self.signal = response_actions["signal"]
+            
+            if self.KEY_SIGNAL in response_actions:
+                self.signal = response_actions[self.KEY_SIGNAL]
                 logging.info(f"🚦 {self.signal}")
-            if "delay" in response_actions:
+
+            if self.KEY_DELAY in response_actions:
                 logging.info("🕓")
-                sleep(response_actions["delay"])
-            if "save" in response_actions:
-                save_actions = response_actions["save"]
+                sleep(response_actions[self.KEY_DELAY])
+
+            if self.KEY_SAVE in response_actions:
+                save_actions = response_actions[self.KEY_SAVE]
                 with open('save.txt', 'a') as file:
-                    for fild in save_actions:
-                        file.write(flow.request.headers[fild] + "\n")
+                    for field in save_actions:
+                        file.write(flow.request.headers[field] + "\n")
                     file.write("\n")
-            if "search" in response_actions:
-                logging.info("🔍")
-                match = re.search(response_actions["search"], flow.response.text)
-                if match:
-                    logging.warning(f"🔍 '{match.group()}' found")
-    
+
+            if self.KEY_SEARCH in response_actions:
+                find(flow, self.mock_search, flow.response.text)
+
         if self.mock_search != "":
-            logging.info("🔍")
-            matches = re.finditer(self.mock_search, flow.response.text)
-            # match = re.search(self.mock_search, flow.response.text)
-            for match in matches:
-                # logging.warning(f"🔍 '{match.group()}' found")
-                logging.warning(f"🔍 '{match.group()}'")
-                flow.marked = ":eye:"
-        
+            find(flow, self.mock_search, flow.response.text)
+
         if self.bad_network:
             flow.marked = ":zzz:"
             sleep(1)
