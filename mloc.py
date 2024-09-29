@@ -18,7 +18,12 @@ def all_markers():
         ctx.master.commands.call(
             "view.flows.create", "get", f"https://example.com/{marker}"
         )
-        ctx.master.commands.call("flow.mark", [ctx.master.view[-1]], marker)
+        # Check if the flow was successfully created and added to the view
+        if ctx.master.view:
+            ctx.master.commands.call("flow.mark", [ctx.master.view[-1]], marker)
+        else:
+            ctx.log.warn(f"No flow available to mark for marker: {marker}")
+
 
 class MockResponse:
 
@@ -68,6 +73,7 @@ class MockResponse:
     KEY_REPLACE_BODY_COMPONENT = "replace_body_component"
     KEY_REPLACE_BODY = "replace_body"
     KEY_ADD_HEADER_REQUEST = "add_header_request"
+    HOST = "host"
 
     
     # @command.command("mock.switch")
@@ -83,14 +89,33 @@ class MockResponse:
     #                     rule["rule_switch"] = not rule.get("rule_switch", True)
     #                     logging.warning("🎚️ switch : %s - %s" % (filter_value, rule["rule_switch"]))
 
-    @command.command("mock.t")
-    def mock_t(self, flow: flow.Flow, emoji: str):
-        flow.marked = f":{emoji}:"
 
-    @command.command("mock.error")
+    # disable or enable flow mock
+    @command.command("m.switch_map_flow")
+    def switch_map_flow(self):
+        flow_url = ctx.master.view.focus.flow.request.url
+        if self.hard_disable_switch.get(flow_url):
+            disable = not self.hard_disable_switch[flow_url]
+            self.hard_disable_switch.update({flow_url: disable})
+            if disable:
+                logging.warning(f"🔀 hard disable Off - {flow_url}")
+            else: 
+                ctx.master.view.focus.flow.marked = ""
+                logging.warning(f"🔀 hard disable On - {flow_url}")
+        else:
+            self.hard_disable_switch.update({flow_url: True})
+            logging.warning(f"🔀 Setting hard disable to Off - {flow_url}")
+
+    # disable or enable kill all
+    @command.command("m.killAll")
+    def switch_map_flow(self):
+        self.mock_toggle_kill_all = not self.mock_toggle_kill_all
+        logging.warning(f"kill all toggle: {self.mock_toggle_kill_all}")
+
+    @command.command("m.error")
     # def mock_error(self, flow: flow.Flow, error: int):
     def mock_error(self, error: int):
-        logging.warning(f"❌  mock error")
+        logging.warning("❌  mock error")
         # self.hard_error_switch.update({flow.request.url: error})
         self.hard_error_switch.update({ctx.master.view.focus.flow.request.url: error})
         logging.warning(self.hard_error_switch)
@@ -98,22 +123,31 @@ class MockResponse:
             self.hard_error_switch = {}
             logging.warning("clear")
 
-    @command.command("mock.find")
+    @command.command("m.delay")
+    def mock_delay(self, delay: int):
+        logging.warning("🥱 mock delay")
+        self.hard_delay.update({ctx.master.view.focus.flow.request.url: delay})
+        logging.warning(self.hard_delay)
+        if delay == 0:
+            self.hard_delay = {}
+            logging.warning("clear")
+
+    @command.command("m.find")
     def mock_find(self, term: str):
         logging.warning(f"⏺️  search: {term}")
         self.mock_search = term
 
-    @command.command("mock.toggle")
-    def mock_toggle(self):
+    @command.command("m.toggle_map_local")
+    def toggle_map_loca(self):
         self.mock_toggle_state = not self.mock_toggle_state
         logging.warning(f"⏺️  mock toggle: {self.mock_toggle_state}")
 
-    @command.command("mock.flow")
+    @command.command("m.flow")
     def mock_flow(self):
         self.signal = "start"
         logging.warning("🌼 flow restart")
 
-    @command.command("mock.zzz")
+    @command.command("m.zzz")
     def mock_zzz(self):
         self.bad_network = not self.bad_network
         logging.warning(f"🥱 bad network {self.bad_network}")
@@ -127,11 +161,13 @@ class MockResponse:
         self.cfg_modified_timestamp = os.path.getmtime(self.configuration_file)
         self.loaded = False
         self.mock_toggle_state = False
+        self.mock_toggle_kill_all = False
         self.mock_search = ""
         self.rule_switch = ""
         self.response_from_file_header = "__f_r_o_m__f_i_le__"
         self.hard_error_switch = {}
         self.hard_delay = {}
+        self.hard_disable_switch = {}
     
     def read_configuration(self):
         try:
@@ -150,6 +186,13 @@ class MockResponse:
             self.mock_toggle_state = self.mock_configuration["enable"]
 
     def interceptor(self, flow):
+
+        if self.hard_disable_switch.get(flow.request.url):
+            logging.warning(f" Appying hard disable: {flow.request.url}")
+            flow.marked = ":grey_exclamation:"
+            return {"intercepted": False, "actions": {}}
+            # :arrows_counterclockwise: :bangbang: :grey_exclamation:
+
         # Intercept the request with all the interception rules
         for rule in self.mock_configuration["rules"]:
             # logging.info(f"✍️ rule: {rule}")
@@ -220,6 +263,11 @@ class MockResponse:
         logging.info(f"🔼  Flow: {flow.request.url}")
         self.reload_configuration()
 
+        if self.mock_toggle_kill_all:
+            logging.warning("❌ kill all")
+            flow.kill()
+            return
+
         if not self.mock_toggle_state:
             logging.info("❌ mLoc disable")
             flow.marked = ":arrow_heading_down:"
@@ -263,6 +311,9 @@ class MockResponse:
                 for header in request_actions[self.KEY_ADD_HEADER_REQUEST]:
                     flow.request.headers[header["key"]] = header["value"]
 
+            if self.HOST in request_actions:
+                flow.request.host = request_actions[self.HOST]
+
             if self.KEY_SAVE in request_actions:
                 save_actions = request_actions[self.KEY_SAVE]
                 with open('save.txt', 'a') as file:
@@ -290,8 +341,8 @@ class MockResponse:
                     data = "{file could not be found}"
                 return data
 
-        def find(flow, pattern, string):
-            logging.info("🔍")
+        def search(flow, pattern, string):
+            logging.info("🔍 searching")
             matches = re.finditer(self.mock_search, flow.response.text)
             for match in matches:
                 logging.warning(f"🔍 found: '{match.group()}'")
@@ -303,6 +354,12 @@ class MockResponse:
             logging.info("❌ mLoc disable")
             return
 
+        for key in self.hard_delay:
+           if key == flow.request.url:
+                logging.info("🕥✅ applying hard dealy")
+                flow.marked = ":blossom:"
+                sleep(self.hard_delay[key])
+           
         for key in self.hard_error_switch:
            if key == flow.request.url:
                 logging.info("❌✅ applying error state")
@@ -382,10 +439,10 @@ class MockResponse:
                     file.write("\n")
 
             if self.KEY_SEARCH in response_actions:
-                find(flow, self.mock_search, flow.response.text)
+                search(flow, self.mock_search, flow.response.text)
 
         if self.mock_search != "":
-            find(flow, self.mock_search, flow.response.text)
+            search(flow, self.mock_search, flow.response.text)
 
         if self.bad_network:
             flow.marked = ":zzz:"
