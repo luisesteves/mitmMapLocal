@@ -17,8 +17,8 @@ rules:
         - key: "<key>"
           value: "<value>"
       replace_url_component:
-        - key: "<key>"
-          value: "<value>" 
+        - old_value: "<key>"
+          new_value: "<value>" 
       replace_body_component:
         - key: "<key>"
           value: "<value>" 
@@ -70,30 +70,81 @@ rules:
           new_key: "Allow"
   # active: true
 
-  #recipes
+  #recipes recipes recipes recipes
 - interceptor:
     url_regexp: "waitrose\\.com.*recipes/all-categories"
   actions:
     response:
-      file: "recipes/live.json"
+      status_code: 400
+      # file: "recipes/live.json"
   # active: true
 
+# Recipes landing page
 - interceptor:
     url_regexp: "waitrose\\.com.*recipes/summary"
   actions:
     response:
       # delay: 5
       # status_code: 400
-      file: "recipes/live2.json"
+      file: "recipes/summary/live.json"
+      # file: "recipes/summary/live-mock.json"
+      # file: "recipes/summary/no_recipes.json"
   # active: true
 
+# carroucel de cima / recipes
 - interceptor:
     url_regexp: "waitrose\\.com.*recipes"
     method: "PUT"
   actions:
     response:
-      # status_code: 400
+      # status_code: 500
+      # delay: 5
       file: "recipes/PUT/live.json"
+      # file: "recipes/PUT/empty_categories.json" # loading
+      # file: "recipes/PUT/two_categories.json"
+      # file: "recipes/PUT/two-categories-mock.json"
+  # active: true
+
+# Open recipe 
+- interceptor:
+    # url_regexp: "waitrose\\.com.*recipes/mango-aperol-sour"
+    url_regexp: "waitrose\\.com.*recipes/ginger-crunch-creams"
+    # url_regexp: "waitrose\\.com.*recipes/summer-veg-pissaladiere"
+    # url_regexp: "waitrose\\.com.*recipes/florentine-pizzas"
+  actions:
+    response:
+      status_code: 500
+      delay: 1
+      # file: "recipes/recipes/summer-veg-pissaladiere.json"
+      # file: "recipes/recipes/florentine-pizzas.json"
+      # file: "recipes/recipes/mango-aperol-sour.json"
+      file: "recipes/recipes/ginger-crunch-creams.json"
+  active: true
+
+# Open ingredientes 
+- interceptor:
+    url_regexp: "waitrose\\.com.*pims-\\D{2,4}/v\\d/pims/products-by-recipe"
+    # body_regexp: "recipeId.*mango-aperol-sour"
+    # body_regexp: "recipeId.*grilled-lemon-oregano-chicken"
+  actions:
+    response:
+      # status_code: 500
+      # body: ""
+      # delay: 1
+      # file: "recipes/recipes/ingredients/mango-aperol-sour.json"
+      # file: "recipes/recipes/ingredients/mango-aperol-sour-dup.json"
+      # file: "recipes/recipes/products-by-recipe-web.json"
+      file: "recipes/recipes/ingredients/no-products.json"
+  # active: true
+
+# recipes products
+- interceptor:
+    url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products/\\d{6}.*"
+  actions:
+    response:
+      # delay: 2
+      file: "products/meal-recipes-ingredients.json" # view similar product
+      # file: "products/recipes-conflict-change-to-delivery.json"
   # active: true
 
 #adresses address-prod/v2/addresses
@@ -139,11 +190,13 @@ rules:
 
 # browse / from tax
 - interceptor:
-    url_regexp: "content-.*/cms/publish/productcontent/browse/\\d"
+    # url_regexp: "content-.*/cms/publish/productcontent/browse/\\d"
+    url_regexp: "content-.*/cms/publish/productcontent/browse/473389834"
   actions:
     response:
       #file: "product-content/browse/live.json"
-      file: "product-content/browse/empty.json"
+      # file: "product-content/browse/empty.json"
+      file: "product-content/browse/PERCENT_OFF_LINE.json"
       #status_code: 500
   # active: true
 
@@ -162,14 +215,13 @@ rules:
   actions:
     response:
       # status_code: 500
-      delay: 5
-      # body: "[]"
+      #delay: 5
+      body: "[]"
       # file: "favourites/favourites.json"
   # active: true
 
 # offers > offer type
 # waitrose.com /api/content-prod/v2/content/offers/percentage-off?clientType=WEB_APP
-#https://wtr-wec-acpt.waitrose.com/api/content-qa/v2/content/offers?clientType=WEB_APP
 - interceptor:
     url_regexp: "waitrose\\.com/api/content-\\D{1,4}/v\\d/content/offers/.*"
   actions:
@@ -179,17 +231,16 @@ rules:
 
 # browse > offers
 - interceptor:
-    url_regexp: "waitrose\\.com/api/content-\\D{1,4}/v\\d/content/offers?"
+    url_regexp: "waitrose\\.com/api/content-\\D{1,4}/v\\d/content/offers\\?clientType=WEB_APP"
   actions:
     response:
       file: "offers/live.json"
       #status_code: 500
-  active: true
+  # active: true
 
-#está a causar um crash na app de beta 
+# PROD
 - interceptor:
     url_regexp: "waitrose.com/api/content-\\D{2,4}/v\\d/content/experience-fragments/waitrosegroceriescms/Apps/home-screen-test/master"
-    #url_regexp: ".*waitrose.com/api/content-.*/.*/content/experience-fragments/waitrosegroceriescms/Apps/home-screen/master"
   actions:
     request:
       replace_url_component:
@@ -198,8 +249,14 @@ rules:
       replace_body_component:
         - key: "home-screen-test"
           value: "home-screen"
-    # response:
-    #   file: "content/waitrosegroceriescms/waitrose-app/homescreen/meal-deals.json" 
+  marker: "1st_place_medal"
+  active: true
+
+- interceptor:
+    url_regexp: "waitrose.com/api/content-\\D{2,4}/v\\d/content/experience-fragments/waitrosegroceriescms/Apps/home-screen/master"
+  actions:
+    response:
+      file: "/Users/esteves/Mindera/groceries-ios/GroceriesUITests/Sources/Services/MockNetworkStackConfiguration/home/home-recipes-content.json" 
   marker: "1st_place_medal"
   active: true
 
@@ -210,7 +267,7 @@ rules:
     response:
       file: "content/waitrosegroceriescms/waitrose-app/homescreen/meal-deals.json"
   marker: "1st_place_medal"
-  active: true
+  # active: true
 
 # offers-experience-qa | meal deals landing page
 - interceptor:
@@ -277,16 +334,28 @@ rules:
       file: "products/new-lower-price.json"
   # active: true
 
+#perus
+- interceptor:
+    url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products"
+  actions:
+    # response:
+      # file: "products/products-perus.json"
+    request:
+      change_query_parameter:
+        - key: "excludeLinesWithConflicts"
+          value: "false"
+  # active: true
+
 #favourites categories, fist request
 - interceptor:
     url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products\\?.*customersFavouritesOnly=true.*size=1"
   actions:
     response:
-      status_code: 500
+      # status_code: 500
       #replace:
       #  replace: "promotionType\":\"LI"
       #  replacement: "promotionType\":\"EXV"
-      #file: "products/favs-on-offer.json"
+      file: "products/favs-on-offer.json"
       # file: products/fav/live2.json
   # active: true
 
@@ -294,12 +363,11 @@ rules:
     url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products\\?.*customersFavouritesOnly=true.*size=100"
   actions:
     response:
-      status_code: 500
+      # status_code: 500
       #replace:
       #  replace: "promotionType\":\"LI"
       #  replacement: "promotionType\":\"EXV"
-      #file: "products/favs-on-offer.json"
-      # file: products/fav/live2.json
+      file: "products/favs-on-offer.json"
   # active: true
 
   # wine
@@ -323,7 +391,8 @@ rules:
     response:
       #file: "products/live.json"
       #file: "products/order-view-similar.json"
-      file: "products/meal-deals.json"
+      # file: "products/meal-deals.json"
+      file: "products/meal-recipes-ingredients.json"
   # active: true
 
 #productcontent/ search feature
@@ -341,9 +410,9 @@ rules:
       #     value: "\"searchTerm\":\"\""
     response:
       #file: "product-content/browse/live.json"
-      #file: "search/view-similar.json"
+      file: "search/view-similar.json"
       #file: "search/live.json"
-      file: "search/milk.json"
+      # file: "search/milk.json"
       #search: "071087"
       #status_code: 200
       #replace:
@@ -364,7 +433,8 @@ rules:
   actions:
     response:
       #file: "products/prod-parse-error.json"
-      file: "search/products/live.json"
+      # file: "search/products/live.json"
+      file: "search/products/conflict.json" 
       # file: "search/products/894714-product-id.json"
       #status_code: 423
   # active: true
@@ -387,7 +457,7 @@ rules:
       #file: "search/acpt-87246.json"
       #file: "search/live.json"
       #file: "search/acpt-86823.json"
-      #file: "search/acpt-wine-promo-hammer.json"
+      file: "search/acpt-wine-promo-hammer.json"
       #file: "search/regular-promo.json"
   marker: "red_square"
   # active: true
@@ -409,7 +479,7 @@ rules:
       #status_code: 400
       #body: ""
   marker: "grapes"
-  active: true
+  # active: true
 
 - interceptor:
     url_regexp: "waitrose\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages\\?.*slotType=ENTERTAINING_COLLECTION"
@@ -430,8 +500,8 @@ rules:
   actions:
     request:
       replace_url_component:
-        - key: "90157"
-          value: "89393" 
+        - old_value: "90157"
+          new_value: "89393" 
     #response:
       #status_code: 500
       #file: "products/fav-fack-meal-deal.json"
@@ -439,7 +509,7 @@ rules:
       #delay: 4
   # active: true
 
-#products / recommendations / favourites / trending
+#products / recommendations / trending
 - interceptor:
     url_regexp: "waitrose\\.com/api/products-\\D{1,4}/v\\d/products/recommendations"
   actions:
@@ -459,15 +529,16 @@ rules:
       #delay: 0.5
   active: true
 
-# view alternatives / similar 
+# view alternatives / similar / view similar
 - interceptor:
     url_regexp: "waitrose\\.com/api/products-\\D{1,4}/v\\d/products\\?view=SUMMARY.*categoryId=\\d*"
   actions:
     response:
-      status_code: 400
+      # status_code: 400
       #file: "products/view-alternatives/live-empty.json"
       #file: "products/view-alternatives/live-killer.json"
       #file: "products/view-alternatives/live-cake.json"
+      file: "products/view-alternatives/live-wine.json"
       #replace:
       #  replace: "totalResults\":27"
       #  replacement: "totalResults\":0"
@@ -682,12 +753,19 @@ rules:
       file: "mydeeplinks.html"
   active: true
 
+# term and conditions
+- interceptor:
+    url_regexp: "wtr-wec-acpt.*terms_and_conditions"
+  actions:
+    request:
+      host: "www.waitrose.com"
+  active: true
+
 ##########################################################
 #                                                        #
 #                          GRAPH                         #
 #                                                        #
 ##########################################################
-
 
 - interceptor:
     url_regexp: "waitrose\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=new-session"
@@ -740,7 +818,16 @@ rules:
     url_regexp: ".*waitrose.com/api/graphql-.*/graph/live\\?tag=get-home-orders"
   actions:
     response:
-      file: "graph/get-home-orders/live.json"
+      # file: "graph/get-home-orders/live.json"
+      delay: 1
+  # active: true
+
+#get-orders
+- interceptor:
+    url_regexp: ".*waitrose.com/api/graphql-.*/graph/live\\?tag=get-orders"
+  actions:
+    response:
+      delay: 1
   # active: true 
 
 # slot-charges
