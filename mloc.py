@@ -106,12 +106,12 @@ class MockResponse:
 
     # disable or enable kill all
     @command.command("m.killAll")
-    def switch_map_flow(self):
+    def mock_killAll(self):
         self.mock_toggle_kill_all = not self.mock_toggle_kill_all
         logging.warning(f"kill all toggle: {self.mock_toggle_kill_all}")
 
     @command.command("m.kill")
-    def switch_map_flow(self):
+    def mock_kill(self):
         flow_url = ctx.master.view.focus.flow.request.url
         if self.mock_toggle_kill.get(flow_url):
             self.mock_toggle_kill.update({flow_url: False})
@@ -148,8 +148,8 @@ class MockResponse:
         logging.warning(f"⏺️  search: {term}")
         self.mock_search = term
 
-    @command.command("m.toggle_map_local")
-    def toggle_map_loca(self):
+    @command.command("m.disable")
+    def mock_disable(self):
         self.mock_toggle_state = not self.mock_toggle_state
         logging.warning(f"⏺️  mock toggle: {self.mock_toggle_state}")
 
