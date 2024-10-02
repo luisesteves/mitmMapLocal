@@ -74,6 +74,7 @@ class MockResponse:
     KEY_REPLACE_BODY = "replace_body"
     KEY_ADD_HEADER_REQUEST = "add_header_request"
     HOST = "host"
+    KILL = "kill"
 
     
     # @command.command("mock.switch")
@@ -313,6 +314,10 @@ class MockResponse:
 
             if self.HOST in request_actions:
                 flow.request.host = request_actions[self.HOST]
+
+            if self.KILL in request_actions and request_actions[self.KILL]:
+                logging.warning("❌ killed")
+                flow.kill
 
             if self.KEY_SAVE in request_actions:
                 save_actions = request_actions[self.KEY_SAVE]
