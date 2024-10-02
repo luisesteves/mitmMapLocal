@@ -113,6 +113,19 @@ class MockResponse:
         self.mock_toggle_kill_all = not self.mock_toggle_kill_all
         logging.warning(f"kill all toggle: {self.mock_toggle_kill_all}")
 
+    @command.command("m.kill")
+    def switch_map_flow(self):
+        flow_url = ctx.master.view.focus.flow.request.url
+        if self.mock_toggle_kill.get(flow_url):
+            self.mock_toggle_kill.update({flow_url: False})
+            logging.warning(f"{self.mock_toggle_kill}")
+
+            ctx.master.view.focus.flow.marked = ""
+            logging.warning(f"❌ kill off - {flow_url}")
+        else:
+            self.mock_toggle_kill.update({flow_url: True})
+            logging.warning(f"❌ Setting kill on - {flow_url}")
+
     @command.command("m.error")
     # def mock_error(self, flow: flow.Flow, error: int):
     def mock_error(self, error: int):
@@ -163,6 +176,7 @@ class MockResponse:
         self.loaded = False
         self.mock_toggle_state = False
         self.mock_toggle_kill_all = False
+        self.mock_toggle_kill = {}
         self.mock_search = ""
         self.rule_switch = ""
         self.response_from_file_header = "__f_r_o_m__f_i_le__"
@@ -266,6 +280,11 @@ class MockResponse:
 
         if self.mock_toggle_kill_all:
             logging.warning("❌ kill all")
+            flow.kill()
+            return
+
+        if self.mock_toggle_kill.get(flow.request.url):
+            logging.warning(f"❌ kill : {flow.request.url}")
             flow.kill()
             return
 
