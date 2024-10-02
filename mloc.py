@@ -96,13 +96,10 @@ class MockResponse:
     def switch_map_flow(self):
         flow_url = ctx.master.view.focus.flow.request.url
         if self.hard_disable_switch.get(flow_url):
-            disable = not self.hard_disable_switch[flow_url]
-            self.hard_disable_switch.update({flow_url: disable})
-            if disable:
-                logging.warning(f"🔀 hard disable Off - {flow_url}")
-            else: 
-                ctx.master.view.focus.flow.marked = ""
-                logging.warning(f"🔀 hard disable On - {flow_url}")
+            self.hard_disable_switch.update({flow_url: False})
+
+            ctx.master.view.focus.flow.marked = ""
+            logging.warning(f"🔀 hard disable On - {flow_url}")
         else:
             self.hard_disable_switch.update({flow_url: True})
             logging.warning(f"🔀 Setting hard disable to Off - {flow_url}")
