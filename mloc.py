@@ -333,7 +333,8 @@ class MockResponse:
 
             if self.KILL in request_actions and request_actions[self.KILL]:
                 logging.warning("❌ killed")
-                flow.kill
+                flow.kill()
+                return
 
             if self.KEY_SAVE in request_actions:
                 save_actions = request_actions[self.KEY_SAVE]
@@ -451,6 +452,11 @@ class MockResponse:
             if self.KEY_DELAY in response_actions:
                 logging.info("🕓")
                 sleep(response_actions[self.KEY_DELAY])
+
+            if self.KILL in response_actions and response_actions[self.KILL]:
+                logging.warning("❌ killed response")
+                flow.kill()
+                return
 
             if self.KEY_SAVE in response_actions:
                 save_actions = response_actions[self.KEY_SAVE]
