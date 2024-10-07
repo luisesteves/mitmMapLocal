@@ -159,13 +159,13 @@ class MockResponse:
         logging.warning("🌼 flow restart")
 
     @command.command("m.zzz")
-    def mock_zzz(self):
-        self.bad_network = not self.bad_network
-        logging.warning(f"🥱 bad network {self.bad_network}")
+    def mock_zzz(self, delay: int = 1):
+        self.bad_network_delay = delay
+        logging.warning(f"🥱 bad network: {delay}")
 
     def __init__(self):
         self.signal = "start"
-        self.bad_network = False
+        self.bad_network_delay = 0
         self.response_sequence_index = 0
 
         self.configuration_file = "cfg.yaml"
@@ -379,7 +379,7 @@ class MockResponse:
         for key in self.hard_delay:
            if key == flow.request.url:
                 logging.info("🕥✅ applying hard dealy")
-                flow.marked = ":blossom:"
+                flow.marked = ":zzz:"
                 sleep(self.hard_delay[key])
            
         for key in self.hard_error_switch:
@@ -471,9 +471,9 @@ class MockResponse:
         if self.mock_search != "":
             search(flow, self.mock_search, flow.response.text)
 
-        if self.bad_network:
+        if self.bad_network_delay != 0:
             flow.marked = ":zzz:"
-            sleep(1)
+            sleep(self.bad_network_delay)
 
 addons = [MockResponse()]
 
