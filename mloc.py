@@ -74,6 +74,7 @@ class MockResponse:
     KEY_REPLACE_BODY = "replace_body"
     KEY_ADD_HEADER_REQUEST = "add_header_request"
     HOST = "host"
+    PATH = "path"
     KILL = "kill"
 
     
@@ -110,6 +111,13 @@ class MockResponse:
         self.mock_toggle_kill_all = not self.mock_toggle_kill_all
         logging.warning(f"kill all toggle: {self.mock_toggle_kill_all}")
 
+
+    @command.command("m.mockTest")
+    def mock_test(self, flows: Sequence[flow.Flow]):
+        for f in flows:
+            # logging.warning(f"FLOW : {f}")
+            f.marked = ":grapes:"
+
     @command.command("m.kill")
     def mock_kill(self):
         flow_url = ctx.master.view.focus.flow.request.url
@@ -125,7 +133,7 @@ class MockResponse:
 
     @command.command("m.error")
     # def mock_error(self, flow: flow.Flow, error: int):
-    def mock_error(self, error: int):
+    def mock_error(self, error: int = 500):
         logging.warning("❌  mock error")
         # self.hard_error_switch.update({flow.request.url: error})
         self.hard_error_switch.update({ctx.master.view.focus.flow.request.url: error})
@@ -135,7 +143,7 @@ class MockResponse:
             logging.warning("clear")
 
     @command.command("m.delay")
-    def mock_delay(self, delay: int):
+    def mock_delay(self, delay: int = 1):
         logging.warning("🥱 mock delay")
         self.hard_delay.update({ctx.master.view.focus.flow.request.url: delay})
         logging.warning(self.hard_delay)
@@ -330,6 +338,8 @@ class MockResponse:
 
             if self.HOST in request_actions:
                 flow.request.host = request_actions[self.HOST]
+            if self.PATH in request_actions:
+                flow.request.path = request_actions[self.PATH]
 
             if self.KILL in request_actions and request_actions[self.KILL]:
                 logging.warning("❌ killed")

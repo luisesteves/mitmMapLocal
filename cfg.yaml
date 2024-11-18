@@ -5,6 +5,7 @@ rules:
 - interceptor:
     url_regexp: ".*waitrose.*/api/favourites2-.*/v\n/favourites"
     header_key: "allow"
+    body_regexp: "some shit"
     method: "POST"
 
   actions:
@@ -71,6 +72,19 @@ rules:
   # active: true
 
   #recipes recipes recipes recipes
+
+- interceptor:
+    url_regexp: ".*images/products.*"
+  actions:
+    request:
+      kill: true
+    response:
+      # kill: true
+      # delay: 6
+      # status_code: 400
+      # file: "recipes/live.json"
+  # active: true
+
 - interceptor:
     url_regexp: "waitrose\\.com.*recipes/all-categories"
   actions:
@@ -93,32 +107,49 @@ rules:
 
 # carroucel de cima / recipes
 - interceptor:
-    url_regexp: "waitrose\\.com.*recipes"
+    url_regexp: "waitrose\\.com.*recipes\\?"
+    body_regexp: "all-categories"
     method: "PUT"
   actions:
     response:
       # status_code: 500
       # delay: 5
-      file: "recipes/PUT/live.json"
+      # file: "recipes/PUT/live.json"
       # file: "recipes/PUT/empty_categories.json" # loading
       # file: "recipes/PUT/two_categories.json"
-      # file: "recipes/PUT/two-categories-mock.json"
+      file: "recipes/PUT/two-categories-mock.json"
+  # active: true
+
+  # open category
+- interceptor:
+    url_regexp: "waitrose\\.com.*recipes\\?"
+    method: "PUT"
+    body_regexp: "seasonal"
+  actions:
+    response:
+      # body: ""
+      # status_code: 500
+      # delay: 5
+      # file: "recipes/PUT/seasona.json"
   # active: true
 
 # Open recipe 
 - interceptor:
     # url_regexp: "waitrose\\.com.*recipes/mango-aperol-sour"
-    url_regexp: "waitrose\\.com.*recipes/ginger-crunch-creams"
+    # url_regexp: "waitrose\\.com.*recipes/ginger-crunch-creams"
     # url_regexp: "waitrose\\.com.*recipes/summer-veg-pissaladiere"
     # url_regexp: "waitrose\\.com.*recipes/florentine-pizzas"
+    url_regexp: "waitrose\\.com.*recipes/roman-holiday"
   actions:
+    # request:
+    #   kill: true
     response:
-      status_code: 500
-      delay: 1
+      # status_code: 500
+      # delay: 4
       # file: "recipes/recipes/summer-veg-pissaladiere.json"
       # file: "recipes/recipes/florentine-pizzas.json"
       # file: "recipes/recipes/mango-aperol-sour.json"
-      file: "recipes/recipes/ginger-crunch-creams.json"
+      file: "recipes/recipes/test.json"
   active: true
 
 # Open ingredientes 
@@ -126,25 +157,35 @@ rules:
     url_regexp: "waitrose\\.com.*pims-\\D{2,4}/v\\d/pims/products-by-recipe"
     # body_regexp: "recipeId.*mango-aperol-sour"
     # body_regexp: "recipeId.*grilled-lemon-oregano-chicken"
+    # body_regexp: "recipeId.*ginger-crunch-creams"
   actions:
+    # request:
+      # kill: true
     response:
       # status_code: 500
       # body: ""
       # delay: 1
-      # file: "recipes/recipes/ingredients/mango-aperol-sour.json"
+      # file: "recipes/recipes/pims/mango-aperol-sour.json"
       # file: "recipes/recipes/ingredients/mango-aperol-sour-dup.json"
       # file: "recipes/recipes/products-by-recipe-web.json"
-      file: "recipes/recipes/ingredients/no-products.json"
+      # file: "recipes/recipes/ingredients/no-products.json"
+      # file: "recipes/recipes/pims/ginger-crunch-creams.json"
+      file: "recipes/recipes/pims/test.json"
   # active: true
 
 # recipes products
 - interceptor:
     url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products/\\d{6}.*"
   actions:
+    request:
+      replace_url_component:
+        - key: "&filterByCustomerSlot=true"
+          value: ""
     response:
       # delay: 2
-      file: "products/meal-recipes-ingredients.json" # view similar product
+      # file: "products/meal-recipes-ingredients.json" # view similar product
       # file: "products/recipes-conflict-change-to-delivery.json"
+      # file: "products/empty.json"
   # active: true
 
 #adresses address-prod/v2/addresses
@@ -191,12 +232,12 @@ rules:
 # browse / from tax
 - interceptor:
     # url_regexp: "content-.*/cms/publish/productcontent/browse/\\d"
-    url_regexp: "content-.*/cms/publish/productcontent/browse/473389834"
+    url_regexp: "content-.*/cms/publish/productcontent/browse/-1"
   actions:
     response:
       #file: "product-content/browse/live.json"
-      # file: "product-content/browse/empty.json"
-      file: "product-content/browse/PERCENT_OFF_LINE.json"
+      file: "product-content/browse/empty.json"
+      # file: "product-content/browse/PERCENT_OFF_LINE.json"
       #status_code: 500
   # active: true
 
@@ -216,8 +257,8 @@ rules:
     response:
       # status_code: 500
       #delay: 5
-      body: "[]"
-      # file: "favourites/favourites.json"
+      # body: "[]"
+      file: "favourites/favourites.json"
   # active: true
 
 # offers > offer type
@@ -238,7 +279,7 @@ rules:
       #status_code: 500
   # active: true
 
-# PROD
+# PROD - HOME CONTENT
 - interceptor:
     url_regexp: "waitrose.com/api/content-\\D{2,4}/v\\d/content/experience-fragments/waitrosegroceriescms/Apps/home-screen-test/master"
   actions:
@@ -256,9 +297,11 @@ rules:
     url_regexp: "waitrose.com/api/content-\\D{2,4}/v\\d/content/experience-fragments/waitrosegroceriescms/Apps/home-screen/master"
   actions:
     response:
-      file: "/Users/esteves/Mindera/groceries-ios/GroceriesUITests/Sources/Services/MockNetworkStackConfiguration/home/home-recipes-content.json" 
+      file: "content/waitrosegroceriescms/Apps/home-screen/master/meal-deal.json" 
+      # file: "content/waitrosegroceriescms/Apps/home-screen/master/recipes.json" 
+      # file: "content/waitrosegroceriescms/Apps/home-screen/master/all-offers.json" 
   marker: "1st_place_medal"
-  active: true
+  # active: true
 
 #ACPT
 - interceptor:
@@ -355,8 +398,8 @@ rules:
       #replace:
       #  replace: "promotionType\":\"LI"
       #  replacement: "promotionType\":\"EXV"
-      file: "products/favs-on-offer.json"
-      # file: products/fav/live2.json
+      # file: "products/favs-on-offer.json"
+      file: "products/fav/live2.json"
   # active: true
 
 - interceptor:
@@ -367,7 +410,8 @@ rules:
       #replace:
       #  replace: "promotionType\":\"LI"
       #  replacement: "promotionType\":\"EXV"
-      file: "products/favs-on-offer.json"
+      # file: "products/favs-on-offer.json"
+      file: "products/fav/live2.json"
   # active: true
 
   # wine
@@ -410,7 +454,8 @@ rules:
       #     value: "\"searchTerm\":\"\""
     response:
       #file: "product-content/browse/live.json"
-      file: "search/view-similar.json"
+      # file: "search/view-similar.json"
+      file: "product-content/search/wine.json"
       #file: "search/live.json"
       # file: "search/milk.json"
       #search: "071087"
@@ -527,7 +572,7 @@ rules:
       #file: "products/recommendations/leatime-entertaining.json"
       #status_code: 400
       #delay: 0.5
-  active: true
+  # active: true
 
 # view alternatives / similar / view similar
 - interceptor:
@@ -753,13 +798,14 @@ rules:
       file: "mydeeplinks.html"
   active: true
 
-# term and conditions
+# term and conditions - não está a funcionar - forbidden
 - interceptor:
-    url_regexp: "wtr-wec-acpt.*terms_and_conditions"
+    url_regexp: ".*terms-and-conditions"
   actions:
     request:
       host: "www.waitrose.com"
-  active: true
+      path: "/api/content/v2/help-information/terms-and-conditions"
+  # active: true
 
 ##########################################################
 #                                                        #
@@ -861,13 +907,13 @@ rules:
       #status_code: 500
       #body: ""
       #file: "trolley/get/WGA-12428.json"
-      file: "trolley/get/wga-12428-1.json"
+      # file: "trolley/get/wga-12428-1.json"
       #file: "trolley/get/luciano.json"
       #file: "graph/get-trolley/error.json"
       #file: "graph/get-trolley/error-allow-subs-662-prod.json"
       #file: "graph/get-trolley/error-allow-subs-662-prod-v2.json"
       #file: "graph/get-trolley/view-similar.json"
-      #file: "graph/get-trolley/live.json"
+      file: "graph/get-trolley/live.json"
       #file: "graph/get-trolley/774-deposit-prod.json"
       #file: "graph/get-trolley/incomplete-offer-issue.json"
       # replace:
