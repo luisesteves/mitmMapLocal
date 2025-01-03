@@ -105,6 +105,47 @@ class MockResponse:
             self.hard_disable_switch.update({flow_url: True})
             logging.warning(f"🔀 Setting hard disable to Off - {flow_url}")
 
+
+    # save response boddy
+    @command.command("m.fast_save")
+    def mock_save_body(self, mock: bool = False):
+
+        logging.warning("fast save")
+
+        flow_url = ctx.master.view.focus.flow.request.url
+
+        meal_deals_rule = {
+            "url_regexp": "waitrose\\.com/api/offers-experience-\\D{2,4}/v\\d/offers\\?offerType=MEAL_DEAL",
+            "path": "offers-experience/offers"
+        }
+        home_orders = {
+            "url_regexp": ".*waitrose.com/api/graphql-.*/graph/live\\?tag=get-home-orders",
+            "path": "graph/get-home-orders"
+        }
+
+        auto_save = [meal_deals_rule, home_orders]
+
+        flow_url = ctx.master.view.focus.flow.request.url
+
+        save_path = ""
+        for rule in auto_save:
+
+            # If specific Rule is found
+            if re.search(rule['url_regexp'], flow_url):
+                logging.warning(rule['url_regexp'])
+                logging.warning(rule['path'])
+
+                save_path = f"../PROXY/{rule['path']}/live.json"
+
+            # Generic Rule
+            else: save_path = f"../PROXY/live.json"
+
+            # save the file
+            with open(save_path, "w") as file:
+                file.write(ctx.master.view.focus.flow.response.text)
+
+            if mock: self.fast_mock.update({flow_url: save_path})
+
     # disable or enable kill all
     @command.command("m.killAll")
     def mock_killAll(self):
@@ -156,9 +197,19 @@ class MockResponse:
         logging.warning(f"⏺️  search: {term}")
         self.mock_search = term
 
-    @command.command("m.disable")
-    def mock_disable(self):
+    @command.command("m.onoff")
+    def mock_onoff(self):
         self.mock_toggle_state = not self.mock_toggle_state
+        logging.warning(f"⏺️  mock toggle: {self.mock_toggle_state}")
+
+    @command.command("m.on")
+    def mock_on(self):
+        self.mock_toggle_state = True
+        logging.warning(f"⏺️  mock toggle: {self.mock_toggle_state}")
+
+    @command.command("m.off")
+    def mock_off(self):
+        self.mock_toggle_state = False
         logging.warning(f"⏺️  mock toggle: {self.mock_toggle_state}")
 
     @command.command("m.flow")
@@ -188,6 +239,7 @@ class MockResponse:
         self.hard_error_switch = {}
         self.hard_delay = {}
         self.hard_disable_switch = {}
+        self.fast_mock = {}
     
     def read_configuration(self):
         try:
@@ -206,12 +258,23 @@ class MockResponse:
             self.mock_toggle_state = self.mock_configuration["enable"]
 
     def interceptor(self, flow):
-
         if self.hard_disable_switch.get(flow.request.url):
             logging.warning(f" Appying hard disable: {flow.request.url}")
             flow.marked = ":grey_exclamation:"
             return {"intercepted": False, "actions": {}}
             # :arrows_counterclockwise: :bangbang: :grey_exclamation:
+
+        if self.fast_mock.get(flow.request.url):
+            logging.warning(f"Fast mock: {flow.request.url}")
+            flow.marked = f":fast_forward:"
+            return {
+                self.KEY_INTERCEPTED: True,
+                self.KEY_ACTIONS: {
+                    self.KEY_RESPONSE: {
+                        self.KEY_FILE: self.fast_mock.get(flow.request.url)
+                    }
+                }
+            }
 
         # Intercept the request with all the interception rules
         for rule in self.mock_configuration["rules"]:
@@ -239,6 +302,7 @@ class MockResponse:
                         intercepted = False
                         break
                 if filter == self.KEY_BODY_REGEXP:
+                    log_filter(flow.request.content.decode("utf-8"))
                     if re.search(filter_value, flow.request.content.decode("utf-8")):
                         log_filter(filter)
                         intercepted = True
@@ -301,7 +365,12 @@ class MockResponse:
         intercepted = self.interceptor(flow)
 
         # if the request was intercepted then, let's run the actions
-        if intercepted[self.KEY_INTERCEPTED] and self.KEY_REQUEST in intercepted[self.KEY_ACTIONS] and intercepted[self.KEY_ACTIONS][self.KEY_REQUEST] is not None:
+        if (
+            intercepted[self.KEY_INTERCEPTED]
+            and intercepted[self.KEY_ACTIONS] is not None
+            and self.KEY_REQUEST in intercepted[self.KEY_ACTIONS]
+            and intercepted[self.KEY_ACTIONS][self.KEY_REQUEST] is not None
+        ):
 
             request_actions = intercepted[self.KEY_ACTIONS][self.KEY_REQUEST]
             logging.info(f"🪛  {request_actions}")
@@ -402,7 +471,12 @@ class MockResponse:
 
         # if the request was intercepeted then, lets run the actions
         # Check if the request was intercepted and run the actions
-        if intercepted[self.KEY_INTERCEPTED] and self.KEY_RESPONSE in intercepted[self.KEY_ACTIONS] and intercepted[self.KEY_ACTIONS][self.KEY_RESPONSE] is not None:
+        if (
+            intercepted[self.KEY_INTERCEPTED]
+            and intercepted.get(self.KEY_ACTIONS)
+            and self.KEY_RESPONSE in intercepted[self.KEY_ACTIONS]
+            and intercepted[self.KEY_ACTIONS][self.KEY_RESPONSE] is not None
+        ):
             response_actions = intercepted[self.KEY_ACTIONS][self.KEY_RESPONSE]
             logging.info(f"🪛  {response_actions}")
 
