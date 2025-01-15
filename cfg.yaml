@@ -1,5 +1,11 @@
 enable: true
 mock_directory: "/Users/esteves/Mindera/PROXY"
+
+auto_save: 
+  - rule:
+    url_regexp: "waitrose\\.com/api/offers-experience-\\D{2,4}/v\\d/offers\\?offerType=MEAL_DEAL"
+    path: "/offers-experience/offers/"
+
 rules:
 #example
 - interceptor:
@@ -93,6 +99,16 @@ rules:
       # file: "recipes/live.json"
   # active: true
 
+
+#delivery traking
+- interceptor:
+    url_regexp: "waitrose\\.com.*delivery-statuses/1001156411"
+    # url_regexp: "waitrose\\.com.*delivery-statuses/"
+  actions:
+    response:
+      file: "delivery-statuses/live.json"
+  # active: true
+
 # Recipes landing page
 - interceptor:
     url_regexp: "waitrose\\.com.*recipes/summary"
@@ -139,7 +155,8 @@ rules:
     # url_regexp: "waitrose\\.com.*recipes/ginger-crunch-creams"
     # url_regexp: "waitrose\\.com.*recipes/summer-veg-pissaladiere"
     # url_regexp: "waitrose\\.com.*recipes/florentine-pizzas"
-    url_regexp: "waitrose\\.com.*recipes/roman-holiday"
+    # url_regexp: "waitrose\\.com.*recipes/roman-holiday"
+    url_regexp: "waitrose\\.com.*recipes/paloma"
   actions:
     # request:
     #   kill: true
@@ -149,8 +166,8 @@ rules:
       # file: "recipes/recipes/summer-veg-pissaladiere.json"
       # file: "recipes/recipes/florentine-pizzas.json"
       # file: "recipes/recipes/mango-aperol-sour.json"
-      file: "recipes/recipes/test.json"
-  active: true
+      file: "recipes/recipes/paloma.json"
+  # active: true
 
 # Open ingredientes 
 - interceptor:
@@ -182,10 +199,11 @@ rules:
         - key: "&filterByCustomerSlot=true"
           value: ""
     response:
+      status_code: 400
       # delay: 2
       # file: "products/meal-recipes-ingredients.json" # view similar product
       # file: "products/recipes-conflict-change-to-delivery.json"
-      # file: "products/empty.json"
+      file: "products/empty.json"
   # active: true
 
 #adresses address-prod/v2/addresses
@@ -201,15 +219,22 @@ rules:
     url_regexp: "waitrose\\.com/.*get-account-info-and-membership"
   actions:
     request:
-      delay: 5
+      delay: 8
   # active: true
 
 # branches
 - interceptor:
     url_regexp: "waitrose\\.com/api/branch-\\D{2,4}/v\\d/branches\\?fulfilment_type=COLLECTION"
   actions:
+    # request:
+    #   change_query_parameter:
+    #     - key: "latitude"
+    #       value: "51.418316"
+    #     - key: "longitude"
+    #       value: "-0.751721"
     response:
-      file: "branches/parking-miles-665.json"
+      # file: "branches/parking-miles-665.json"
+      file: "branches/instore.json"
   # active: true
 
 # branches
@@ -223,9 +248,14 @@ rules:
 # browse
 - interceptor:
     url_regexp: "content-.*/cms/publish/productcontent/browse"
+    # body_regexp: 'start":21'
   actions:
+    request:
+      # replace_body_component: 
+      #   - key: "\"start\":21"
+      #     value: "\"start\":24"
     response:
-      file: "product-content/browse/live2.json"
+      file: "product-content/browse/live.json"
       #status_code: 500
   # active: true
 
@@ -283,24 +313,25 @@ rules:
 - interceptor:
     url_regexp: "waitrose.com/api/content-\\D{2,4}/v\\d/content/experience-fragments/waitrosegroceriescms/Apps/home-screen-test/master"
   actions:
-    request:
-      replace_url_component:
-        - key: "home-screen-test"
-          value: "home-screen" 
-      replace_body_component:
-        - key: "home-screen-test"
-          value: "home-screen"
-  marker: "1st_place_medal"
-  active: true
+    # request:
+    #   replace_url_component:
+    #     - key: "home-screen-test"
+    #       value: "home-screen" 
+    #   replace_body_component:
+    #     - key: "home-screen-test"
+    #       value: "home-screen"
+  # marker: "1st_place_medal"
+  # active: true
 
 - interceptor:
     url_regexp: "waitrose.com/api/content-\\D{2,4}/v\\d/content/experience-fragments/waitrosegroceriescms/Apps/home-screen/master"
   actions:
     response:
-      file: "content/waitrosegroceriescms/Apps/home-screen/master/meal-deal.json" 
+      # file: "content/waitrosegroceriescms/Apps/home-screen/master/meal-deal.json" 
       # file: "content/waitrosegroceriescms/Apps/home-screen/master/recipes.json" 
       # file: "content/waitrosegroceriescms/Apps/home-screen/master/all-offers.json" 
-  marker: "1st_place_medal"
+      # file: "content/waitrosegroceriescms/Apps/home-screen/master/live.json"
+  # marker: "1st_place_medal"
   # active: true
 
 #ACPT
@@ -308,7 +339,7 @@ rules:
     url_regexp: ".*waitrose.com/api/content-qa/v\\d/content/experience-fragments/waitrosegroceriescms/Apps/home-screen/master"
   actions:
     response:
-      file: "content/waitrosegroceriescms/waitrose-app/homescreen/meal-deals.json"
+      # file: "content/waitrosegroceriescms/waitrose-app/homescreen/meal-deals.json"
   marker: "1st_place_medal"
   # active: true
 
@@ -318,6 +349,7 @@ rules:
   actions:
     response:
       #file: "offers-experience/offers/live-update.json"
+      file: "offers-experience/offers/live.json"
       #status_code: 500
   # active: true
 
@@ -326,7 +358,9 @@ rules:
     url_regexp: "waitrose\\.com/api/offers-experience-\\D{2,4}/v\\d/offers/\\d*"
   actions:
     response:
-      status_code: 500
+      # status_code: 500
+      # when a meal deal is expired
+      status_code: 409 
   # active: true
 
 
@@ -349,7 +383,8 @@ rules:
 
 #v1/products
 - interceptor:
-    url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products\\?view=SUMMARY.*promotionId=90557"
+    # url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products\\?view=SUMMARY.*promotionId=90557"
+    url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products\\?view=SUMMARY.*promotionId=101"
     #url_regexp: "waitrose\\.com/api/products-\\D{2,4}/v\\d/products"
   actions:
     request:
@@ -366,7 +401,8 @@ rules:
     response:
       #remove_header: "metadata"
       #file: "products/chosen-for-you.json"
-      #file: "products/promo/90557.json"
+      # file: "products/promo/90557.json"
+      file: "products/promo/101.json"
   # active: true
 
 #new lower price
@@ -584,6 +620,7 @@ rules:
       #file: "products/view-alternatives/live-killer.json"
       #file: "products/view-alternatives/live-cake.json"
       file: "products/view-alternatives/live-wine.json"
+      # file: "products/view-alternatives/live.json"
       #replace:
       #  replace: "totalResults\":27"
       #  replacement: "totalResults\":0"
@@ -817,9 +854,11 @@ rules:
     url_regexp: "waitrose\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=new-session"
   actions:
     response:
-      replace: "expiresIn\":\\d*"
-      replacement: "expiresIn\":300"
-  active: true
+      # status_code: 409
+      # replace:
+      #   replace: "expiresIn\":\\d*"
+      #   replacement: "expiresIn\":300"
+  # active: true
 
 # book-slot
 - interceptor:
@@ -864,8 +903,8 @@ rules:
     url_regexp: ".*waitrose.com/api/graphql-.*/graph/live\\?tag=get-home-orders"
   actions:
     response:
-      # file: "graph/get-home-orders/live.json"
-      delay: 1
+      file: "graph/get-home-orders/live.json"
+      # delay: 1
   # active: true
 
 #get-orders
@@ -873,7 +912,8 @@ rules:
     url_regexp: ".*waitrose.com/api/graphql-.*/graph/live\\?tag=get-orders"
   actions:
     response:
-      delay: 1
+      file: "graph/get-orders/live.json"
+      # delay: 1
   # active: true 
 
 # slot-charges
@@ -906,14 +946,14 @@ rules:
     response:
       #status_code: 500
       #body: ""
-      #file: "trolley/get/WGA-12428.json"
+      file: "live.json"
       # file: "trolley/get/wga-12428-1.json"
       #file: "trolley/get/luciano.json"
       #file: "graph/get-trolley/error.json"
       #file: "graph/get-trolley/error-allow-subs-662-prod.json"
       #file: "graph/get-trolley/error-allow-subs-662-prod-v2.json"
       #file: "graph/get-trolley/view-similar.json"
-      file: "graph/get-trolley/live.json"
+      # file: "graph/get-trolley/live.json"
       #file: "graph/get-trolley/774-deposit-prod.json"
       #file: "graph/get-trolley/incomplete-offer-issue.json"
       # replace:
@@ -925,13 +965,13 @@ rules:
 - interceptor:
     url_regexp: "waitrose\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=update-trolley-items"
   actions:
-    # request:
-    #   replace_body_component:
-    #     - key: "Test"
-    #       value: "luís" 
-    response:
-      status_code: 500
-      body: ""
+    request:
+      replace_body_component:
+        - key: "\"noteToShopper\":\"\""
+          value: "\"noteToShopper\":null"  
+    # response:
+      # status_code: 500
+      # body: ""
       #file: "graph/update-trolley-items/live.json"
       #file: "graph/update-trolley-items/view-similar.json"
       #delay: 30
@@ -939,13 +979,18 @@ rules:
 
 
 # shopping-context
-# this forces a refresh session 
 - interceptor:
     url_regexp: "waitrose\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=shopping-context"
   actions:
-    response:
-      body: '{"errors":[{"message":"Unauthorised","locations":[{"line":2,"column":3}],"path":["shoppingContext"]}],"data":{"shoppingContext":null}}'
-      status_code: 401
+    # this forces a refresh session 
+    # response:
+    #   body: '{"errors":[{"message":"Unauthorised","locations":[{"line":2,"column":3}],"path":["shoppingContext"]}],"data":{"shoppingContext":null}}'
+    #   status_code: 401
+
+    # this forces a logout
+    # response:
+      # body: '{"data":{"shoppingContext":{"__typename":"SetShoppingContextPayload","customerId":"700169839","customerOrderId":"1000856084","customerOrderState":"PENDING","defaultBranchId_":"651"}}}'
+      # status_code: 409
   # active: true
 
   #current-slot
@@ -956,8 +1001,9 @@ rules:
       delay: 3
       #save:
       #  - "cookie"
-    #response:
+    response:
       #file: "graph/current-slot/error-307"
+      file: "graph/current-slot/live.json"
   # active: true
 
 ##########################################################

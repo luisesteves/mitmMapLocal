@@ -93,7 +93,7 @@ class MockResponse:
 
 
     # disable or enable flow mock
-    @command.command("m.switch_map_flow")
+    @command.command("m.flowOnOff")
     def switch_map_flow(self):
         flow_url = ctx.master.view.focus.flow.request.url
         if self.hard_disable_switch.get(flow_url):
@@ -105,6 +105,17 @@ class MockResponse:
             self.hard_disable_switch.update({flow_url: True})
             logging.warning(f"🔀 Setting hard disable to Off - {flow_url}")
 
+    @command.command("m.flowOn")
+    def switch_map_flow_on(self):
+        flow_url = ctx.master.view.focus.flow.request.url
+        self.hard_disable_switch.update({flow_url: False})
+        logging.warning(f"🔀 Setting hard enable - {flow_url}")
+
+    @command.command("m.flowOff")
+    def switch_map_flow_off(self):
+        flow_url = ctx.master.view.focus.flow.request.url
+        self.hard_disable_switch.update({flow_url: True})
+        logging.warning(f"🔀 Setting hard disable - {flow_url}")
 
     # save response boddy
     @command.command("m.fast_save")
@@ -114,37 +125,54 @@ class MockResponse:
 
         flow_url = ctx.master.view.focus.flow.request.url
 
-        meal_deals_rule = {
-            "url_regexp": "waitrose\\.com/api/offers-experience-\\D{2,4}/v\\d/offers\\?offerType=MEAL_DEAL",
-            "path": "offers-experience/offers"
-        }
-        home_orders = {
-            "url_regexp": ".*waitrose.com/api/graphql-.*/graph/live\\?tag=get-home-orders",
-            "path": "graph/get-home-orders"
-        }
-
-        auto_save = [meal_deals_rule, home_orders]
+        auto_save = [
+            {
+                "url_regexp": "waitrose\\.com/api/offers-experience-\\D{2,4}/v\\d/offers\\?offerType=MEAL_DEAL",
+                "path": "offers-experience/offers"
+            },
+            {
+                "url_regexp": ".*waitrose.com/api/graphql-.*/graph/live\\?tag=get-home-orders",
+                "path": "graph/get-home-orders"
+            },
+            {
+                "url_regexp": ".*waitrose.com/api/graphql-.*/graph/live\\?tag=get-orders",
+                "path": "graph/get-orders"
+            },
+            {
+                "url_regexp": ".*waitrose.com/api/graphql-.*/graph/live\\?tag=shopping-context",
+                "path": "graph/shopping-context"
+            },
+            {
+                "url_regexp": ".*waitrose.com.*delivery-statuses",
+                "path": "delivery-statuses"
+            },
+            {
+                "url_regexp": ".*waitrose.com.*recipes/.*",
+                "path": "recipes/recipes"
+            }
+        ]
 
         flow_url = ctx.master.view.focus.flow.request.url
 
-        save_path = ""
+        save_path = f"../PROXY/live.json"
+        rule_was_found = False
         for rule in auto_save:
 
             # If specific Rule is found
             if re.search(rule['url_regexp'], flow_url):
+                logging.warning("rule found")
                 logging.warning(rule['url_regexp'])
                 logging.warning(rule['path'])
 
                 save_path = f"../PROXY/{rule['path']}/live.json"
+                rule_was_found = True
+                break
+                
+        # save the file
+        with open(save_path, "w") as file:
+            file.write(ctx.master.view.focus.flow.response.text)
 
-            # Generic Rule
-            else: save_path = f"../PROXY/live.json"
-
-            # save the file
-            with open(save_path, "w") as file:
-                file.write(ctx.master.view.focus.flow.response.text)
-
-            if mock: self.fast_mock.update({flow_url: save_path})
+        # if mock: self.fast_mock.update({flow_url: save_path})
 
     # disable or enable kill all
     @command.command("m.killAll")
