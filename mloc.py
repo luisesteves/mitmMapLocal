@@ -109,7 +109,7 @@ class MockResponse:
     def switch_map_flow_on(self):
         flow_url = ctx.master.view.focus.flow.request.url
         self.hard_disable_switch.update({flow_url: False})
-        logging.warning(f"🔀 Setting hard enable - {flow_url}")
+        logging.warning(f"🔀 Setting hard enable to Off - {flow_url}")
 
     @command.command("m.flowOff")
     def switch_map_flow_off(self):
