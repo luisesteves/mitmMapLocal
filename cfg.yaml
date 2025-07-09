@@ -1,18 +1,18 @@
 version: 1
 enable: true
-mock_directory: "/Users/user/PROXY"
+mock_directory: "/Users/esteves/Mindera/PROXY"
 
 auto_save: 
   - rule:
-    url_regexp: "poo\\.com/api/offers-\\D{2,4}/v\\d/offers\\?offerType=MEAL_DEAL"
-    path: "/offers/offers/"
+    url_regexp: "<change-me>\\.com/api/offers-experience-\\D{2,4}/v\\d/offers\\?offerType=MEAL_DEAL"
+    path: "/offers-experience/offers/"
 
 rules:
 #example
 - interceptor:
-    url_regexp: ".*poo.*/api/favourites2-.*/v\n/favourites"
+    url_regexp: ".*<change-me>.*/api/favourites2-.*/v\n/favourites"
     header_key: "allow"
-    body_regexp: "regrex"
+    body_regexp: "some shit"
     method: "POST"
 
   actions:
@@ -60,4 +60,1035 @@ rules:
         - "cookie"
       search: "regex"
   marker: "https://api.github.com/emojis"
+  # active: true
+
+- interceptor:
+    url_regexp: ".*<change-me>.*"
+  actions:
+    request:
+      delay: 0.5
+  # active: true
+
+# address Options
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/address-\\D{2,4}/v\\d/addresses/\\d*"
+    method: "OPTIONS"
+  actions:
+    response:
+      change_header_key:
+        - key: "allow"
+          new_key: "Allow"
+  # active: true
+
+  #recipes recipes recipes recipes
+
+- interceptor:
+    url_regexp: ".*images/products.*"
+  actions:
+    request:
+      kill: true
+    response:
+      # kill: true
+      # delay: 6
+      # status_code: 400
+      # file: "recipes/live.json"
+  # active: true
+
+- interceptor:
+    url_regexp: "<change-me>\\.com.*recipes/all-categories"
+  actions:
+    response:
+      # status_code: 400
+      file: "recipes/live.json"
+  # active: true
+
+
+#delivery traking
+- interceptor:
+    url_regexp: "<change-me>\\.com.*delivery-statuses/1001156411"
+    # url_regexp: "<change-me>\\.com.*delivery-statuses/"
+  actions:
+    response:
+      file: "delivery-statuses/live.json"
+  # active: true
+
+# Recipes landing page
+- interceptor:
+    url_regexp: "<change-me>\\.com.*recipes/summary"
+  actions:
+    response:
+      # delay: 5
+      status_code: 400
+      # file: "recipes/summary/live.json"
+      # file: "recipes/summary/live-mock.json"
+      # file: "recipes/summary/no_recipes.json"
+  # active: true
+
+# carroucel de cima / recipes
+- interceptor:
+    url_regexp: "<change-me>\\.com.*recipes\\?"
+    body_regexp: "all-categories"
+    method: "PUT"
+  actions:
+    response:
+      status_code: 500
+      # delay: 5
+      # file: "recipes/PUT/live.json"
+      # file: "recipes/PUT/empty_categories.json" # loading
+      # file: "recipes/PUT/two_categories.json"
+      # file: "recipes/PUT/two-categories-mock.json"
+  # active: true
+
+  # open category
+- interceptor:
+    url_regexp: "<change-me>\\.com.*recipes\\?"
+    method: "PUT"
+    body_regexp: "seasonal"
+  actions:
+    response:
+      # body: ""
+      # status_code: 500
+      # delay: 5
+      # file: "recipes/PUT/seasona.json"
+  # active: true
+
+# Open recipe 
+- interceptor:
+    # url_regexp: "<change-me>\\.com.*recipes/mango-aperol-sour"
+    # url_regexp: "<change-me>\\.com.*recipes/ginger-crunch-creams"
+    # url_regexp: "<change-me>\\.com.*recipes/summer-veg-pissaladiere"
+    # url_regexp: "<change-me>\\.com.*recipes/florentine-pizzas"
+    # url_regexp: "<change-me>\\.com.*recipes/roman-holiday"
+    # url_regexp: "<change-me>\\.com.*recipes/paloma"
+    url_regexp: "<change-me>\\.com.*recipes/spring-feast-pizza-jersey-royals"
+    # url_regexp: "<change-me>\\.com.*recipes/easy-chicken-traybake-with-garlic-roast-veg"
+  actions:
+    # request:
+    #   kill: true
+    response:
+      status_code: 500
+      # delay: 4
+      # file: "recipes/recipes/summer-veg-pissaladiere.json"
+      # file: "recipes/recipes/florentine-pizzas.json"
+      # file: "recipes/recipes/mango-aperol-sour.json"
+      # file: "recipes/recipes/paloma.json"
+      # file: "recipes/recipes/easy-chicken-traybake-with-garlic-roast-veg.json"
+  # active: true
+
+# Open ingredientes 
+- interceptor:
+    url_regexp: "<change-me>\\.com.*pims-\\D{2,4}/v\\d/pims/products-by-recipe"
+    # body_regexp: "recipeId.*mango-aperol-sour"
+    # body_regexp: "recipeId.*grilled-lemon-oregano-chicken"
+    # body_regexp: "recipeId.*ginger-crunch-creams"
+  actions:
+    # request:
+      # kill: true
+    response:
+      # status_code: 500
+      # body: ""
+      # delay: 1
+      # file: "recipes/recipes/pims/mango-aperol-sour.json"
+      # file: "recipes/recipes/ingredients/mango-aperol-sour-dup.json"
+      # file: "recipes/recipes/products-by-recipe-web.json"
+      # file: "recipes/recipes/ingredients/no-products.json"
+      # file: "recipes/recipes/pims/ginger-crunch-creams.json"
+      file: "recipes/recipes/pims/test.json"
+  # active: true
+
+# recipes products
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/products-\\D{2,4}/v\\d/products/\\d{6}.*"
+  actions:
+    request:
+      replace_url_component:
+        - key: "&filterByCustomerSlot=true"
+          value: ""
+    response:
+      status_code: 400
+      # delay: 2
+      # file: "products/meal-recipes-ingredients.json" # view similar product
+      # file: "products/recipes-conflict-change-to-delivery.json"
+      file: "products/empty.json"
+  # active: true
+
+#adresses address-prod/v2/addresses
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/address-\\D{2,4}/v\\d/addresses$"
+  actions:
+    response:
+      #file: "addresses/live.json"
+      status_code: 500
+  # active: true
+
+- interceptor:
+    url_regexp: "<change-me>\\.com/.*get-account-info-and-membership"
+  actions:
+    response:
+      file: "graph/get-account-info-and-membership/live.json"
+    # request:
+  #     # delay: 8
+  # active: true
+
+# branches
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/branch-\\D{2,4}/v\\d/branches\\?fulfilment_type=COLLECTION"
+  actions:
+    # request:
+    #   change_query_parameter:
+    #     - key: "latitude"
+    #       value: "51.418316"
+    #     - key: "longitude"
+    #       value: "-0.751721"
+    response:
+      # file: "branches/parking-miles-665.json"
+      file: "branches/instore.json"
+  # active: true
+
+# branches
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/branch-\\D{2,4}/v\\d/branches/135"
+  actions:
+    response:
+      file: "branches/135.json"
+  # active: true
+
+# browse
+- interceptor:
+    url_regexp: "content-.*/cms/publish/productcontent/browse"
+    # body_regexp: 'start":21'
+  actions:
+    request:
+      # replace_body_component: 
+      #   - key: "\"start\":21"
+      #     value: "\"start\":24"
+    response:
+      file: "product-content/browse/live.json"
+      #status_code: 500
+  # active: true
+
+# browse / from tax
+- interceptor:
+    # url_regexp: "content-.*/cms/publish/productcontent/browse/\\d"
+    url_regexp: "content-.*/cms/publish/productcontent/browse/-1"
+  actions:
+    response:
+      #file: "product-content/browse/live.json"
+      file: "product-content/browse/empty.json"
+      # file: "product-content/browse/PERCENT_OFF_LINE.json"
+      #status_code: 500
+  # active: true
+
+# set favourite
+- interceptor:
+    url_regexp: "<change-me>.*favourites/\\d"
+  actions:
+    response:
+      status_code: 500
+      #delay: 14
+      #body: "{}"
+  # active: true
+
+- interceptor:
+    url_regexp: "<change-me>.*favourites\\?lastPurchase"
+  actions:
+    response:
+      # status_code: 500
+      #delay: 5
+      # body: "[]"
+      file: "favourites/favourites.json"
+  # active: true
+
+# offers > offer type
+# <change-me>.com /api/content-prod/v2/content/offers/percentage-off?clientType=WEB_APP
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/content-\\D{1,4}/v\\d/content/offers/.*"
+  actions:
+    response:
+      file: "offers/live.json"
+  # active: true
+
+# browse > offers
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/content-\\D{1,4}/v\\d/content/offers\\?clientType=WEB_APP"
+  actions:
+    response:
+      file: "offers/live.json"
+      #status_code: 500
+  # active: true
+
+# PROD - HOME CONTENT
+- interceptor:
+    url_regexp: "<change-me>.com/api/content-\\D{2,4}/v\\d/content/experience-fragments/<change-me>groceriescms/Apps/home-screen-test/master"
+  actions:
+    # request:
+    #   replace_url_component:
+    #     - key: "home-screen-test"
+    #       value: "home-screen" 
+    #   replace_body_component:
+    #     - key: "home-screen-test"
+    #       value: "home-screen"
+  # marker: "1st_place_medal"
+  # active: true
+
+- interceptor:
+    url_regexp: "<change-me>.com/api/content-\\D{2,4}/v\\d/content/experience-fragments/<change-me>groceriescms/Apps/home-screen/master"
+  actions:
+    response:
+      # file: "content/<change-me>groceriescms/Apps/home-screen/master/meal-deal.json" 
+      # file: "content/<change-me>groceriescms/Apps/home-screen/master/recipes.json"
+      file: "content/<change-me>groceriescms/Apps/home-screen/master/christmas-hub-link.json" 
+      # file: "content/<change-me>groceriescms/Apps/home-screen/master/all-offers.json" 
+  # # marker: "1st_place_medal"
+  # active: true
+
+  # Christmas / taxomony
+- interceptor:
+    url_regexp: "<change-me>.com/api/content-\\D{2,4}/v\\d/content/experience-fragments/<change-me>groceriescms/Apps/events/landing-screens/christmas/master"
+    # /api/content-prod/v2/content/experience-fragments/<change-me>groceriescms/Apps/events/landing-screens/christmas/master
+  actions:
+    response:
+      # file: "content/<change-me>groceriescms/Apps/home-screen/master/christmas_meu.json" #natal meu antigo
+      file: "content/<change-me>groceriescms/Apps/home-screen/master/chrismas_hub_content_joana.json" #natal Joana
+      # file: "content/<change-me>groceriescms/Apps/home-screen/master/xmas_hub.json" #natal Joana
+  # marker: "1st_place_medal"
+  # active: true
+
+
+#ACPT
+- interceptor:
+    url_regexp: ".*<change-me>.com/api/content-qa/v\\d/content/experience-fragments/<change-me>groceriescms/Apps/home-screen/master"
+  actions:
+    response:
+      # file: "content/<change-me>groceriescms/<change-me>-app/homescreen/meal-deals.json"
+  marker: "1st_place_medal"
+  # active: true
+
+# offers-experience-qa | meal deals landing page
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/offers-experience-\\D{2,4}/v\\d/offers\\?offerType=MEAL_DEAL"
+  actions:
+    response:
+      #file: "offers-experience/offers/live-update.json"
+      file: "offers-experience/offers/live.json"
+      #status_code: 500
+  # active: true
+
+# offers-experience-qa | meal deals
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/offers-experience-\\D{2,4}/v\\d/offers/\\d*"
+  actions:
+    response:
+      # status_code: 500
+      # when a meal deal is expired
+      status_code: 409 
+  # active: true
+
+
+##########################################################
+#                                                        #
+#                  home carroucel                        #
+#                                                        #
+##########################################################
+
+#products
+#chosen for tyou
+#wtr-wec-acpt.<change-me>.com /api/products-qa/v1/products?view=SUMMARY&trolleyId=1000854799&size=24&start=0&filterByCustomerSlot=true&excludeLinesFromTrolley=true&excludeLinesWithConflicts=true&showRecommendations=true&excludeHfss=true
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/products-\\D{2,4}/v\\d/products\\?.*showRecommendations=true"
+  actions:
+    response:
+      #remove_header: "metadata"
+      file: "products/chosen-for-you.json"
+  # active: true
+
+#v1/products
+- interceptor:
+    # url_regexp: "<change-me>\\.com/api/products-\\D{2,4}/v\\d/products\\?view=SUMMARY.*promotionId=90557"
+    url_regexp: "<change-me>\\.com/api/products-\\D{2,4}/v\\d/products\\?view=SUMMARY.*promotionId=101"
+    #url_regexp: "<change-me>\\.com/api/products-\\D{2,4}/v\\d/products"
+  actions:
+    request:
+      # change_query_parameter:
+      #   - key: "promotionId"
+      #     value: "90351"
+     #add_query_parameter:
+        #- key: "filterByCustomerSlot"
+        #  value: "true"
+        # - key: "customerOrderId"
+        #   value: "1001066314"
+        #- key: "trolleyId"
+        #  value: "1001066314"
+    response:
+      #remove_header: "metadata"
+      #file: "products/chosen-for-you.json"
+      # file: "products/promo/90557.json"
+      file: "products/promo/101.json"
+  # active: true
+
+#new lower price
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/products-\\D{2,4}/v\\d/products\\?.*categoryId=523064"
+  actions:
+    response:
+      file: "products/new-lower-price.json"
+  # active: true
+
+#perus
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/products-\\D{2,4}/v\\d/products"
+  actions:
+    # response:
+      # file: "products/products-perus.json"
+    request:
+      change_query_parameter:
+        - key: "excludeLinesWithConflicts"
+          value: "false"
+  # active: true
+
+#favourites categories, fist request
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/products-\\D{2,4}/v\\d/products\\?.*customersFavouritesOnly=true.*size=1"
+  actions:
+    response:
+      # status_code: 500
+      #replace:
+      #  replace: "promotionType\":\"LI"
+      #  replacement: "promotionType\":\"EXV"
+      # file: "products/favs-on-offer.json"
+      file: "products/fav/live2.json"
+  # active: true
+
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/products-\\D{2,4}/v\\d/products\\?.*customersFavouritesOnly=true.*size=100"
+  actions:
+    response:
+      # status_code: 500
+      #replace:
+      #  replace: "promotionType\":\"LI"
+      #  replacement: "promotionType\":\"EXV"
+      # file: "products/favs-on-offer.json"
+      file: "products/fav/live2.json"
+  # active: true
+
+  # wine
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/products-\\D{2,4}/v\\d/products\\?.*categoryId=300471"
+  actions:
+    response:
+      file: "products/home-carroucel-wine.json"
+  # active: true
+
+##########################################################
+#                                                        #
+#       END           home carroucel                     #
+#                                                        #
+##########################################################
+
+#products - order details - SFTO - meal deals 
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/products-\\D{2,4}/v\\d/products/\\d{6}.*"
+  actions:
+    response:
+      #file: "products/live.json"
+      #file: "products/order-view-similar.json"
+      # file: "products/meal-deals.json"
+      file: "products/meal-recipes-ingredients.json"
+  # active: true
+
+#productcontent/ search feature
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/content-\\D{2,4}/v\\d/cms/publish/productcontent/search/\\d*"
+  actions:
+    request:
+      #replace_body: "{\"customerSearchRequest\":{\"queryParams\":{\"size\":48,\"category\":\"234676\",\"searchTerm\":\"\",\"sortBy\":\"RELEVANCE\",\"searchTags\":[{\"group\":\"CUSTOM\",\"text\":\"Yoghurt\"}],\"filterTags\":[{\"id\":\"suitableforthoseavoidingmilkfilter\",\"value\":\"Suitable_for_those_avoiding_milk\"}],\"orderId\":\"0\",\"categoryLevel\":1}}}"
+      #replace_body: "{\"customerSearchRequest\":{\"queryParams\":{\"size\":48,\"category\":\"234676\",\"searchTerm\":\"\",\"sortBy\":\"RELEVANCE\",\"searchTags\":[{\"group\":\"CUSTOM\",\"text\":\"Yoghurt\"}],\"filterTags\":[{\"id\":\"suitableforthoseavoidingmilkfilter\",\"value\":\"Suitable_for_those_avoiding_milk\"}],\"orderId\":\"0\",\"categoryLevel\":1}}}"
+      #replace_body: "{\"customerSearchRequest\":{\"queryParams\":{\"category\":\"234676\",\"categoryLevel\":1,\"filterTags\":[{\"count\":35,\"id\":\"suitableforthoseavoidingmilkfilter\",\"text\":\"No Milk\",\"value\":\"Suitable_for_those_avoiding_milk\"}],\"orderId\":\"0\",\"searchTags\":[{\"group\":\"CUSTOM\",\"text\":\"Yoghurt\"}],\"searchTerm\":\"yoghurt\",\"sortBy\":\"RELEVANCE\"}}}"
+      # replace_body_component: 
+      #   - key: "\"start\":21"
+      #     value: "\"start\":24"
+      #   - key: "\"searchTerm\":\"yoghurt\""
+      #     value: "\"searchTerm\":\"\""
+    response:
+      #file: "product-content/browse/live.json"
+      # file: "search/view-similar.json"
+      # file: "product-content/search/wine.json"
+      file: "search/live.json"
+      # file: "search/milk.json"
+      #search: "071087"
+      #status_code: 200
+      #replace:
+      #  replace: "Add 2 for £8"
+      #  replacement: "poop"
+  # active: true
+
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/products-\\D{1,4}/v\\d/products/catalog/\\d*"
+  actions:
+    response:
+      # file: "products/catalog/live.json" 
+      file: "products/catalog/live-mal.json" 
+      # status_code: 423
+  # active: true
+
+#search - product pdp
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/custsearch-\\D{2,4}/v\\d/search/(\\d*|-1)/\\d*-\\d*-\\d*\\?orderId=\\d*"
+  actions:
+    response:
+      #file: "products/prod-parse-error.json"
+      file: "search/products/live.json"
+      # file: "search/products/conflict.json" 
+      # file: "search/products/894714-product-id.json"
+      #status_code: 423
+  # active: true
+
+ #search incomplete offers
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/custsearch-\\D{2,4}/v\\d/search/\\d*"
+    #body_regexp: "promotion.*101"
+    #body_regexp: "promotion"
+  actions:
+    request:
+      #replace_body_component:
+        #- key: "\"promotionId\":\"88769\""
+        #  value: "\"promotionId\":\"106\"" 
+        # - key: "\"excludeHfss\":true"
+        #   value: "\"excludeHfss\":false" 
+    response:
+      #file: "search/prod-product-incomplet-offers.json"
+      #file: "search/acpt-wine-promo.json"
+      #file: "search/acpt-87246.json"
+      #file: "search/live.json"
+      #file: "search/acpt-86823.json"
+      file: "search/acpt-wine-promo-hammer.json"
+      #file: "search/regular-promo.json"
+  marker: "red_square"
+  # active: true
+
+# slot-messages
+- interceptor:
+    #url_regexp: "<change-me>\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages\\?.*slotType=DELIVERY"
+    url_regexp: "<change-me>\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages"
+  actions:
+    #request:
+    #  add_query_parameter:
+    #    - key: "clientType"
+    #       value: "MOBILE_APP"
+    response:
+      #file_sequence: ["slot-experience/slot-experience-error.json", "slot-experience/slot-experience-informative.json", "slot-experience/slot-experience-success.json", "slot-experience/slot-experience-warning.json"]
+      #file: "slot-experience/slot-experience-informative.json"
+      #file: "slot-experience/live.json"
+      file: "slot-experience/slot-experience-success.json"
+      #status_code: 400
+      #body: ""
+  marker: "grapes"
+  active: true
+
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages\\?.*slotType=ENTERTAINING_COLLECTION"
+  actions:
+    response:
+      file: "slot-experience/slot-experience-informative.json"
+  # active: true
+
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/slot-experience-\\D{1,4}/v\\d/slot-messages\\?.*slotType=GROCERY_COLLECTION"
+  actions:
+    response:
+      file: "slot-experience/slot-experience-warning.json"
+  # active: true
+
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/products-\\D{1,4}/v\\d/products.*size=24"
+  actions:
+    request:
+      replace_url_component:
+        - old_value: "90157"
+          new_value: "89393" 
+    #response:
+      #status_code: 500
+      #file: "products/fav-fack-meal-deal.json"
+      #file: "products/live-size1.json"
+      #delay: 4
+  # active: true
+
+#products / recommendations / trending
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/products-\\D{1,4}/v\\d/products/recommendations"
+  actions:
+    request:
+      #add_query_parameter:
+        #- key: "filterByCustomerSlot"
+        #  value: "true"
+        #- key: "customerOrderId"
+        #  value: "1001053254"
+        #  value: "-1"
+    response:
+      file: "products/recommendations/recommendations.json"
+      #file: "products/recommendations/live.json"
+      #file: "products/recommendations/empty.json"
+      #file: "products/recommendations/leatime-entertaining.json"
+      #status_code: 400
+      #delay: 0.5
+  active: true
+
+# view alternatives / similar / view similar
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/products-\\D{1,4}/v\\d/products\\?view=SUMMARY.*categoryId=\\d*"
+  actions:
+    response:
+      # status_code: 400
+      #file: "products/view-alternatives/live-empty.json"
+      #file: "products/view-alternatives/live-killer.json"
+      #file: "products/view-alternatives/live-cake.json"
+      file: "products/view-alternatives/live-wine.json"
+      # file: "products/view-alternatives/live.json"
+      #replace:
+      #  replace: "totalResults\":27"
+      #  replacement: "totalResults\":0"
+  marker: "adult"
+  # active: true
+
+# SFTO
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/products-\\D{1,4}/v\\d/products/\\d*.*\\?view=SUMMARY\\&trolleyId=\\d*"
+  actions:
+    response:
+      status_code: 200
+      file: "products/sfto/out-of-stock.json"
+  marker: "studio_microphone"
+  # active: true
+
+  # memberships
+- interceptor:
+    url_regexp: "<change-me>.*memberships"
+  actions:
+    response:
+      delay: 30
+      #status_code: 404
+  # active: true 
+
+# CHOOSE VOUCHERS, my<change-me>-rewards
+- interceptor:
+    url_regexp: "<change-me>.*my<change-me>-rewards"
+  actions:
+    response:
+      #file: "Vouchers/my<change-me>-rewards/v2/useMoreOften.json"
+      #file: "Vouchers/my<change-me>-rewards/v2/allUsed.json"
+      #file: "Vouchers/my<change-me>-rewards/v2/live.json"
+      file: "Vouchers/my<change-me>-rewards/v2/mock.json"
+      #status_code: 200
+  # active: true
+
+# WALLET, incentive-offers
+- interceptor:
+    url_regexp: "<change-me>.*incentive-offers$"
+    method: "GET"
+  actions:
+    response:
+      #file: "Vouchers/incentive-offer-qa/old/live.json"
+      #file: "Vouchers/incentive-offer-qa/bandeira.json"
+      body: ""
+      status_code: 500
+      #delay: 5
+  # active: true
+
+# WALLET, incentive-offers/propositions
+- interceptor:
+    url_regexp: "<change-me>.*incentive-offers/propositions"
+    #method: "GET"
+  actions:
+    response:
+      file: "Vouchers/incentive-offer-qa/propositions/prop.json"
+      #status_code: 200
+  # active: true
+
+
+##########################################################
+#              Choose voucher NEW flow                   #
+##########################################################
+
+- interceptor:
+    url_regexp: "<change-me>.*incentive-offers$"
+    method: "GET"
+    signal: "start"
+  actions:
+    response:
+      file: "Vouchers/incentive-offer-qa/nuno-1.json"
+  # active: true
+
+- interceptor:
+    url_regexp: "<change-me>.*incentive-offers/propositions"
+    signal: "start"
+  actions:
+    response:
+      file: "Vouchers/incentive-offer-qa/propositions/prop.json"
+  # active: true
+
+- interceptor:
+    url_regexp: "<change-me>.*incentive-offers/.*/load"
+    method: "PATCH"
+  actions:
+    response:
+      status_code: 200
+      body: ""
+      signal: "patch"
+  # active: true
+
+- interceptor:
+    url_regexp: "<change-me>.*incentive-offers$"
+    signal: "patch"
+    method: "GET"
+  actions:
+    response:
+      file: "Vouchers/incentive-offer-qa/nuno-2.json"
+  # active: true
+
+- interceptor:
+    url_regexp: "<change-me>.*incentive-offers/propositions"
+    signal: "patch"
+  actions:
+    response:
+      file: "Vouchers/incentive-offer-qa/propositions/prop-2.json"
+  # active: true
+
+- interceptor:
+    url_regexp: "<change-me>.*incentive-offers/.*/unload"
+    method: "PATCH"
+    signal: "patch"
+  actions:
+    response:
+      status_code: 200
+      body: ""
+      signal: "start"
+  # active: true
+
+##########################################################
+#                                                        #
+#                  Choose voucher flow                   #
+#                                                        #
+##########################################################
+- interceptor:
+    url_regexp: ".*<change-me>.*my<change-me>-rewards"
+    signal: "start"
+  actions:
+    response:
+      file: "Vouchers/my<change-me>-rewards/v2/live.json"
+      status_code: 200
+  # active: true
+# ⬇️
+- interceptor:
+    url_regexp: ".*<change-me>.*my<change-me>-rewards"
+    signal: "post"
+  actions:
+    response:
+      file: "Vouchers/my<change-me>-rewards/v2/live-after-post.json"
+      status_code: 200
+      signal: "start"
+  # active: true
+# ⬇️
+- interceptor:
+    url_regexp: ".*<change-me>.*incentive-offers"
+    method: "GET"
+    signal: "start"
+  actions:
+    response:
+      file: "Vouchers/incentive-offer-qa/old/live.json"
+      #file: "Vouchers/incentive-offer-qa/empty.json"
+      status_code: 200
+  # active: true
+# ⬇️
+- interceptor:
+    url_regexp: ".*<change-me>.*incentive-offers"
+    method: "POST"
+  actions:
+    response:
+      file: "Vouchers/incentive-offer-qa/POST/post.json"
+      status_code: 200
+      signal: "post"
+  # active: true
+# ⬇️
+- interceptor:
+    url_regexp: ".*<change-me>.*incentive-offers"
+    method: "GET"
+    signal: "post"
+  actions:
+    response:
+      file: "Vouchers/incentive-offer-qa/old/live-after-post.json"
+      status_code: 200
+      delay: 2
+  # active: true
+
+##########################  END  ##########################
+
+# priced-products
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/pricing2-\\D{2,4}/v\\d/priced-products"
+  actions:
+    response:
+      file: "priced-products/live.json"
+  # active: true
+
+# Taxonomy
+- interceptor:
+    url_regexp: ".*/api/taxonomy-entity.*/.*/taxonomy/<change-me>-ecomm-groceries"
+  actions:
+    response:
+      file: "taxonomy/taxonomy_xmas.json"
+      # file: "taxonomy/live.json"
+      #file_sequence: ["taxonomy/with_category.json", "taxonomy/without_category.json"]
+  # active: true
+
+# Term-suggest
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/term-suggest-\\D{2,4}/v\\d/term-suggest/terms\\?term=.*"
+  actions:
+    response:
+      #file: "/term-suggestions/live.json"
+      body: ""
+      status_code: 400
+  # active: true
+
+#deeplinks
+- interceptor:
+    url_regexp: ".*<change-me>.com/deeplinks"
+  actions:
+    response:
+      file: "mydeeplinks.html"
+  active: true
+
+# term and conditions - não está a funcionar - forbidden
+- interceptor:
+    url_regexp: ".*terms-and-conditions"
+  actions:
+    request:
+      host: "www.<change-me>.com"
+      path: "/api/content/v2/help-information/terms-and-conditions"
+  # active: true
+
+##########################################################
+#                                                        #
+#                          GRAPH                         #
+#                                                        #
+##########################################################
+
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=new-session"
+  actions:
+    response:
+      # status_code: 409
+      # replace:
+      #   replace: "expiresIn\":\\d*"
+      #   replacement: "expiresIn\":300"
+  # active: true
+
+# book-slot
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=book-slot"
+  actions:
+    response:
+      #file: "graph/book-slot/fully-booked.json"
+      file: "graph/book-slot/live.json"
+      #delay: 1
+  # active: true
+
+# slot dates
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=slot-dates"
+  actions:
+    response:
+      file: "graph/slot-dates/live.json"
+      #delay: 1
+  # active: true
+
+# slot days
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=slot-days"
+  actions:
+    response:
+      file: "graph/slot-days/live.json"
+      #delay: 1
+  # active: true
+
+
+# campaigns
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=campaigns"
+  actions:
+    response:
+      file: "graph/campains/live.json"
+      #delay: 1
+  # active: true
+
+#get-home-orders
+- interceptor:
+    url_regexp: ".*<change-me>.com/api/graphql-.*/graph/live\\?tag=get-home-orders"
+  actions:
+    response:
+      file: "graph/get-home-orders/live.json"
+      # delay: 1
+  # active: true
+
+#get-orders
+- interceptor:
+    url_regexp: ".*<change-me>.com/api/graphql-.*/graph/live\\?tag=get-orders"
+  actions:
+    response:
+      file: "graph/get-orders/live.json"
+      # delay: 1
+  # active: true 
+
+  #get-order
+- interceptor:
+    url_regexp: ".*<change-me>.com/api/graphql-.*/graph/live\\?tag=get-order$"
+  actions:
+    response:
+      file: "graph/get-order/live.json"
+      # file: "graph/get-order/live-android.json"
+      # delay: 1
+  # active: true
+
+# slot-charges
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/graphql-\\D{1,4}/graph/live\\?tag=slot-charges"
+  actions:
+    response:
+      status_code: 400
+  # active: true
+
+#delivery pass
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/delivery-pass-orchestration-\\D{1,4}/v\\d/prices"
+  actions:
+    response:
+      # status_code: 400
+      file: "pass/live.json"
+  active: true
+
+
+#delivery pass
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/delivery-pass-orchestration-\\D{2,4}/v\\d/pass/status"
+  actions:
+    response:
+      # status_code: 400
+      file: "pass/status/live.json"
+  active: true
+
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/content-\\D{2,4}/v\\d/content/experience-fragments/<change-me>groceriescms/deliverypass/faqs/master"
+  actions:
+    response:
+      status_code: 400
+      # file: "pass/faqs/live.json"
+  # active: true
+
+
+  # slot-charges
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/graphql-\\D{1,4}/graph/live\\?tag=slot-dates"
+  actions:
+    response:
+      file: "graph/slot-dates/live.json"
+  # active: true
+
+
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/graphql-\\D{1,4}/graph/live\\?tag=slot-times"
+  actions:
+    response:
+      file: "graph/slot-times/live.json"
+  # active: true
+
+# get-trolley
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=get-trolley"
+  actions:
+    response:
+      # status_code: 400
+      #body: ""
+      # file: "trolley/get/wga-12428-1.json"
+      #file: "trolley/get/luciano.json"
+      #file: "graph/get-trolley/error.json"
+      #file: "graph/get-trolley/error-allow-subs-662-prod.json"
+      #file: "graph/get-trolley/error-allow-subs-662-prod-v2.json"
+      #file: "graph/get-trolley/view-similar.json"
+      file: "graph/get-trolley/live.json"
+      #file: "graph/get-trolley/774-deposit-prod.json"
+      #file: "graph/get-trolley/incomplete-offer-issue.json"
+      # replace:
+      #   replace: "\"1001039116\""
+      #   replacement: "null"
+  # active: true
+
+# update-trolley-items
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=update-trolley-items"
+  actions:
+    # request:
+      # delay: 1
+      # replace_body_component:
+        # - key: "\"noteToShopper\":\"\""
+          # value: "\"noteToShopper\":null"  
+      # replace_body_component:
+      #   - key: "\"canSubstitute\":null,"
+      #     value: ""  
+    # response:
+      # status_code: 500
+      # body: ""
+      # file: "graph/update-trolley-items/live.json"
+      #file: "graph/update-trolley-items/view-similar.json"
+      # delay: 2
+  # active: true
+
+
+# shopping-context
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=shopping-context"
+  actions:
+    # this forces a refresh session 
+    # response:
+    #   body: '{"errors":[{"message":"Unauthorised","locations":[{"line":2,"column":3}],"path":["shoppingContext"]}],"data":{"shoppingContext":null}}'
+    #   status_code: 401
+
+    # this forces a logout
+    # response:
+      # body: '{"data":{"shoppingContext":{"__typename":"SetShoppingContextPayload","customerId":"700169839","customerOrderId":"1000856084","customerOrderState":"PENDING","defaultBranchId_":"651"}}}'
+      # status_code: 409
+  # active: true
+
+  #current-slot
+- interceptor:
+    url_regexp: "<change-me>\\.com/api/graphql-\\D{2,4}/graph/live\\?tag=current-slot"
+  actions:
+    request:
+      delay: 3
+      #save:
+      #  - "cookie"
+    response:
+      #file: "graph/current-slot/error-307"
+      file: "graph/current-slot/live.json"
+  # active: true
+
+##########################################################
+#                                                        #
+#                          SPG                           #
+#                                                        #
+##########################################################
+# shop-status
+- interceptor:
+    url_regexp: ".*<change-me>.com/api/graphql-.*/graph/live\\?tag=shop-status"
+  actions:
+    response:
+      file: "SPG/graph/shop-status/live-completed.json"
+  # active: true
+
+
+# scan-item-to-shop-trolley
+- interceptor:
+    url_regexp: ".*<change-me>.com/api/graphql-.*/graph/live\\?tag=scan-item-to-shop-trolley"
+  actions:
+    response:
+      file: "SPG/graph/scan-item-to-shop-trolley/shop-trolley.json"
   # active: true
