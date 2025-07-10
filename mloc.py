@@ -10,8 +10,7 @@ import random
 from datetime import datetime
 from mitmproxy.utils import emoji
 from typing import Optional
-# A
-# B
+
 @command.command("all.markers")
 def all_markers():
     "Create a new flow showing all marker values"
@@ -156,6 +155,7 @@ class MockResponse:
     def mock_error(self, error: int = 500):
         logging.warning("❌  mock error")
         # self.hard_error_switch.update({flow.request.url: error})
+        ctx.master.view.focus.flow.marked = ":eight_spoked_asterisk:"
         self.hard_error_switch.update({ctx.master.view.focus.flow.request.url: error})
         logging.warning(self.hard_error_switch)
         if error == 0:
@@ -450,6 +450,7 @@ class MockResponse:
         for key in self.hard_error_switch:
            if key == flow.request.url:
                 logging.info("❌✅ applying error state")
+                flow.marked = ":eight_spoked_asterisk:"
                 flow.response.status_code = self.hard_error_switch[key]
                 flow.response.content = str.encode("")
                 return
