@@ -132,6 +132,12 @@ class MockResponse:
             # logging.warning(f"FLOW : {f}")
             f.marked = ":grapes:"
 
+    @command.command("m.timestamp")
+    def mock_time(self):
+        ts = ctx.master.view.focus.flow.timestamp_start
+        readable = datetime.fromtimestamp(ts).strftime('%H:%M:%S.%f')[:-3]
+        logging.warning(f"Request started at {readable}")
+
     @command.command("m.kill")
     def mock_kill(self):
         flow_url = ctx.master.view.focus.flow.request.url
@@ -405,7 +411,7 @@ class MockResponse:
             flow.marked = ""
             if self.response_from_file_header in flow.request.headers:
                 flow.request.headers.pop(self.response_from_file_header)
-        
+
     def response(self, flow):
 
         logging.info(f"⬇️  Flow: {flow.request.url}")
