@@ -6,6 +6,7 @@ import yaml
 import os
 import logging
 from time import sleep
+import asyncio
 import random 
 from datetime import datetime
 from mitmproxy.utils import emoji
@@ -322,7 +323,8 @@ class MockResponse:
 
         return {"intercepted": intercepted, "actions": actions}
 
-    def request(self, flow):
+    async def request(self, flow):
+    # def request(self, flow):
         logging.info(f"🔼  Flow: {flow.request.url}")
         self.reload_configuration()
 
@@ -340,6 +342,13 @@ class MockResponse:
             logging.info("❌ mLoc disable")
             flow.marked = ":arrow_heading_down:"
             return
+
+        for key in self.hard_delay:
+           if key == flow.request.url:
+                logging.info("🕥✅ applying hard dealy")
+                flow.marked = ":zzz:"
+                # sleep(self.hard_delay[key])
+                await asyncio.sleep(self.hard_delay[key])
 
         intercepted = self.interceptor(flow)
 
@@ -412,7 +421,7 @@ class MockResponse:
             if self.response_from_file_header in flow.request.headers:
                 flow.request.headers.pop(self.response_from_file_header)
 
-    def response(self, flow):
+    async def response(self, flow):
 
         logging.info(f"⬇️  Flow: {flow.request.url}")
 
@@ -445,7 +454,8 @@ class MockResponse:
            if key == flow.request.url:
                 logging.info("🕥✅ applying hard dealy")
                 flow.marked = ":zzz:"
-                sleep(self.hard_delay[key])
+                # sleep(self.hard_delay[key])
+                await asyncio.sleep(self.hard_delay[key])
            
         for key in self.hard_error_switch:
            if key == flow.request.url:
