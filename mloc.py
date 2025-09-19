@@ -135,8 +135,9 @@ class MockResponse:
     @command.command("m.timestamp")
     def mock_time(self):
         ts = ctx.master.view.focus.flow.timestamp_start
-        readable = datetime.fromtimestamp(ts).strftime('%H:%M:%S.%f')[:-3]
+        readable = datetime.fromtimestamp(ts).strftime('%M:%S.%f')[:-3]
         logging.warning(f"Request started at {readable}")
+        ctx.master.view.focus.flow.request.path += f" | {readable}"
 
     @command.command("m.kill")
     def mock_kill(self):
@@ -434,7 +435,8 @@ class MockResponse:
                     abs_path = os.path.abspath(filename)
                     return open(abs_path).read()
                 except IOError:
-                    data = "{file could not be found}"
+                    data = f"{abs_path} could not be found"
+                    logging.error(data)
                 return data
 
         def search(flow, pattern, string):
