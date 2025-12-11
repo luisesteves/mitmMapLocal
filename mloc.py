@@ -78,7 +78,6 @@ class MockResponse:
     HOST = "host"
     PATH = "path"
     KILL = "kill"
-
     
     # @command.command("mock.switch")
     # def switch(self, flow: flow.Flow):
@@ -164,6 +163,17 @@ class MockResponse:
             self.hard_error_switch = {}
             logging.warning("clear")
 
+    @command.command("m.showOrderStart")
+    def mock_start_show_order(self):
+        logging.warning("✚ Show order")
+        self.response_order_toggle = True
+
+    @command.command("m.showOrderStop")
+    def mock_stop_show_order(self):
+        logging.warning("✚ Stop order")
+        self.response_order_toggle = False
+        self.response_order = 0
+
     @command.command("m.delay")
     def mock_delay(self, delay: int = 1):
         logging.warning("🥱 mock delay")
@@ -208,6 +218,9 @@ class MockResponse:
         self.bad_network_delay = 0
         self.response_sequence_index = 0
 
+        self.response_order_toggle = False
+        self.response_order = 0
+
         self.configuration_file = "cfg.yaml"
         self.cfg_modified_timestamp = os.path.getmtime(self.configuration_file)
         self.loaded = False
@@ -221,6 +234,14 @@ class MockResponse:
         self.hard_delay = {}
         self.hard_disable_switch = {}
         self.fast_mock = {}
+
+    def search(self, flow, pattern, string):
+        logging.info("🔍 searching")
+        matches = re.finditer(pattern, string)
+        flow.marked = ":mag:"
+        for match in matches:
+            logging.warning(f"🔍 found: '{match.group()}'")
+            flow.marked = ":eye:"
     
     def read_configuration(self):
         try:
@@ -318,14 +339,13 @@ class MockResponse:
 
             if intercepted:
                 # we dont need to continue to try other rules
-                flow.marked = f":{marker}:"
+                # flow.marked = f":{marker}:"
                 # flow.request.url += "  #########"
                 break
 
         return {"intercepted": intercepted, "actions": actions}
 
     async def request(self, flow):
-    # def request(self, flow):
         logging.info(f"🔼  Flow: {flow.request.url}")
         self.reload_configuration()
 
@@ -360,6 +380,8 @@ class MockResponse:
             and self.KEY_REQUEST in intercepted[self.KEY_ACTIONS]
             and intercepted[self.KEY_ACTIONS][self.KEY_REQUEST] is not None
         ):
+
+            flow.marked = ":heavy_exclamation_mark:"
 
             request_actions = intercepted[self.KEY_ACTIONS][self.KEY_REQUEST]
             logging.info(f"🪛  {request_actions}")
@@ -417,8 +439,11 @@ class MockResponse:
                     for field in save_actions:
                         file.write(flow.request.headers[field] + "\n")
                     file.write("\n")
+            
+            if self.KEY_SEARCH in request_actions:
+                self.search(flow, request_actions[self.KEY_SEARCH], flow.request.text)
         else:
-            flow.marked = ""
+            # flow.marked = ""
             if self.response_from_file_header in flow.request.headers:
                 flow.request.headers.pop(self.response_from_file_header)
 
@@ -438,13 +463,6 @@ class MockResponse:
                     data = f"{abs_path} could not be found"
                     logging.error(data)
                 return data
-
-        def search(flow, pattern, string):
-            logging.info("🔍 searching")
-            matches = re.finditer(self.mock_search, flow.response.text)
-            for match in matches:
-                logging.warning(f"🔍 found: '{match.group()}'")
-                flow.marked = ":eye:"
 
         self.reload_configuration()
 
@@ -477,6 +495,9 @@ class MockResponse:
             and self.KEY_RESPONSE in intercepted[self.KEY_ACTIONS]
             and intercepted[self.KEY_ACTIONS][self.KEY_RESPONSE] is not None
         ):
+
+            flow.marked = ":heavy_exclamation_mark:"
+            
             response_actions = intercepted[self.KEY_ACTIONS][self.KEY_RESPONSE]
             logging.info(f"🪛  {response_actions}")
 
@@ -550,14 +571,19 @@ class MockResponse:
                     file.write("\n")
 
             if self.KEY_SEARCH in response_actions:
-                search(flow, self.mock_search, flow.response.text)
+                search(flow, response_actions[self.KEY_SEARCH], flow.response.text)
 
         if self.mock_search != "":
-            search(flow, self.mock_search, flow.response.text)
+            self.search(flow, self.mock_search, flow.response.text)
 
         if self.bad_network_delay != 0:
             flow.marked = ":zzz:"
             sleep(self.bad_network_delay)
+
+        if self.response_order_toggle:
+            self.response_order = self.response_order + 1
+            # logging.warning(self.response_order)
+            flow.request.path += f" | {self.response_order}"
 
 addons = [MockResponse()]
 
