@@ -263,7 +263,7 @@ class MockResponse:
         if self.hard_disable_switch.get(flow.request.url):
             logging.warning(f" Appying hard disable: {flow.request.url}")
             flow.marked = ":grey_exclamation:"
-            return {"intercepted": False, "actions": {}}
+            return {self.KEY_INTERCEPTED: False, self.KEY_ACTIONS: {}}
             # :arrows_counterclockwise: :bangbang: :grey_exclamation:
 
         if self.fast_mock.get(flow.request.url):
@@ -278,72 +278,52 @@ class MockResponse:
                 }
             }
 
-        # Intercept the request with all the interception rules
-        for rule in self.mock_configuration["rules"]:
-            # logging.info(f"✍️ rule: {rule}")
-            interceptor = rule[self.KEY_INTERCEPTOR]
-            actions = rule[self.KEY_ACTIONS]
-            marker = rule.get(self.KEY_MARKER, "heavy_exclamation_mark")
-            intercepted = False
+        def log_filter(filter_key):
+            logging.info(f"🔴 intercepted \"{filter_key}\"")
 
+        response_headers = flow.response.headers if flow.response else {}
+        request_body = (flow.request.content or b"").decode("utf-8", errors="ignore")
+        default_result = {self.KEY_INTERCEPTED: False, self.KEY_ACTIONS: {}}
+
+        # Intercept the request with all the interception rules
+        for rule in self.mock_configuration.get("rules", []):
             if not rule.get(self.KEY_ACTIVE, False):
                 continue
-            elif not rule.get(self.KEY_RULE_SWITCH, True):
+            if not rule.get(self.KEY_RULE_SWITCH, True):
                 continue
 
-            def log_filter(filter):
-                logging.info(f"🔴 intercepted \"{filter}\"")
+            rule_interceptor = rule.get(self.KEY_INTERCEPTOR, {})
+            actions = rule.get(self.KEY_ACTIONS, {})
+            intercepted = True
 
-            for filter, filter_value in interceptor.items():
-                if filter == self.KEY_URL_REGEXP:
-                    if re.search(filter_value, flow.request.url):
-                        log_filter(filter)
-                        intercepted = True
-                        continue
-                    else:
-                        intercepted = False
-                        break
-                if filter == self.KEY_BODY_REGEXP:
-                    log_filter(flow.request.content.decode("utf-8"))
-                    if re.search(filter_value, flow.request.content.decode("utf-8")):
-                        log_filter(filter)
-                        intercepted = True
-                        continue
-                    else:
-                        intercepted = False
-                        break
-                if filter == self.KEY_HEADER_KEY:
-                    if filter_value in flow.response.headers:
-                        log_filter(filter)
-                        intercepted = True
-                        continue
-                    else:
-                        intercepted = False
-                        break
-                if filter == self.KEY_METHOD:
-                    if filter_value == flow.request.method:
-                        log_filter(filter)
-                        intercepted = True
-                        continue
-                    else:
-                        intercepted = False
-                        break
-                if filter == self.KEY_SIGNAL:
-                    if filter_value == self.signal:
-                        log_filter(filter)
-                        intercepted = True
-                        continue
-                    else:
-                        intercepted = False
-                        break
+            for filter_key, filter_value in rule_interceptor.items():
+                matched = False
 
-            if intercepted:
-                # we dont need to continue to try other rules
-                # flow.marked = f":{marker}:"
-                # flow.request.url += "  #########"
+                if filter_key == self.KEY_URL_REGEXP:
+                    matched = re.search(filter_value, flow.request.url) is not None
+                elif filter_key == self.KEY_BODY_REGEXP:
+                    matched = re.search(filter_value, request_body) is not None
+                elif filter_key == self.KEY_HEADER_KEY:
+                    matched = filter_value in response_headers
+                elif filter_key == self.KEY_METHOD:
+                    matched = filter_value == flow.request.method
+                elif filter_key == self.KEY_SIGNAL:
+                    matched = filter_value == self.signal
+                else:
+                    logging.warning(f"Unsupported interceptor filter: {filter_key}")
+                    matched = False
+
+                if matched:
+                    log_filter(filter_key)
+                    continue
+
+                intercepted = False
                 break
 
-        return {"intercepted": intercepted, "actions": actions}
+            if intercepted:
+                return {self.KEY_INTERCEPTED: True, self.KEY_ACTIONS: actions}
+
+        return default_result
 
     async def request(self, flow):
         logging.info(f"🔼  Flow: {flow.request.url}")
