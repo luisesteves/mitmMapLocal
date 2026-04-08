@@ -1,7 +1,6 @@
 import re
-import json
 from collections.abc import Sequence
-from mitmproxy import ctx, http, command, flow
+from mitmproxy import ctx, command, flow
 import yaml
 import os
 import logging
@@ -10,7 +9,6 @@ import asyncio
 import random 
 from datetime import datetime
 from mitmproxy.utils import emoji
-from typing import Optional
 
 @command.command("all.markers")
 def all_markers():
@@ -44,11 +42,6 @@ class MockResponse:
     KEY_INTERCEPTED = "intercepted"
     KEY_ACTIONS = "actions"
     KEY_REQUEST = "request"
-    KEY_RESPONSE = "response"
-
-    # Constants for intercepted and response actions
-    KEY_INTERCEPTED = "intercepted"
-    KEY_ACTIONS = "actions"
     KEY_RESPONSE = "response"
 
     # Constants for response actions keys
@@ -247,8 +240,9 @@ class MockResponse:
         try:
             with open(self.configuration_file) as f:
                 self.mock_configuration = yaml.safe_load(f)
-        except IOError:    
-            self.mock_configuration = "{file could not be found}"
+        except IOError:
+            logging.error("Configuration file could not be found: %s", self.configuration_file)
+            self.mock_configuration = {}
 
     def reload_configuration(self):
         fileTs = os.path.getmtime(self.configuration_file)
@@ -257,7 +251,7 @@ class MockResponse:
             self.cfg_modified_timestamp = fileTs
             self.read_configuration()
             self.loaded = True
-            self.mock_toggle_state = self.mock_configuration["enable"]
+            self.mock_toggle_state = self.mock_configuration.get("enable", False)
 
     def interceptor(self, flow):
         if self.hard_disable_switch.get(flow.request.url):
@@ -417,7 +411,7 @@ class MockResponse:
                 save_actions = request_actions[self.KEY_SAVE]
                 with open('save.txt', 'a') as file:
                     for field in save_actions:
-                        file.write(flow.request.headers[field] + "\n")
+                        file.write(flow.request.headers.get(field, "") + "\n")
                     file.write("\n")
             
             if self.KEY_SEARCH in request_actions:
@@ -434,11 +428,13 @@ class MockResponse:
         def read_file(filename):
             try:
                 abs_path = os.path.abspath(f"{self.mock_configuration['mock_directory']}/{filename}")
-                return open(abs_path).read()
+                with open(abs_path, encoding="utf-8") as file:
+                    return file.read()
             except IOError:
                 try:
                     abs_path = os.path.abspath(filename)
-                    return open(abs_path).read()
+                    with open(abs_path, encoding="utf-8") as file:
+                        return file.read()
                 except IOError:
                     data = f"{abs_path} could not be found"
                     logging.error(data)
@@ -504,11 +500,13 @@ class MockResponse:
                     flow.response.headers[header["key"]] = header["value"]
 
             if self.KEY_REMOVE_HEADER in response_actions:
-                flow.response.headers.pop(response_actions[self.KEY_REMOVE_HEADER])
+                flow.response.headers.pop(response_actions[self.KEY_REMOVE_HEADER], None)
 
             if self.KEY_CHANGE_HEADER_KEY in response_actions:
                 for header in response_actions[self.KEY_CHANGE_HEADER_KEY]:
-                    value = flow.response.headers[header["key"]]
+                    value = flow.response.headers.get(header["key"])
+                    if value is None:
+                        continue
                     logging.info(f"👺  {value}")
                     flow.response.headers.pop(header["key"])
                     flow.response.headers[header[self.KEY_NEW_KEY]] = value
@@ -547,11 +545,11 @@ class MockResponse:
                 save_actions = response_actions[self.KEY_SAVE]
                 with open('save.txt', 'a') as file:
                     for field in save_actions:
-                        file.write(flow.request.headers[field] + "\n")
+                        file.write(flow.request.headers.get(field, "") + "\n")
                     file.write("\n")
 
             if self.KEY_SEARCH in response_actions:
-                search(flow, response_actions[self.KEY_SEARCH], flow.response.text)
+                self.search(flow, response_actions[self.KEY_SEARCH], flow.response.text)
 
         if self.mock_search != "":
             self.search(flow, self.mock_search, flow.response.text)
