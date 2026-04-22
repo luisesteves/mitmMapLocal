@@ -245,13 +245,85 @@ class MockResponse:
             self.mock_configuration = {}
 
     def reload_configuration(self):
-        fileTs = os.path.getmtime(self.configuration_file)
-        if self.cfg_modified_timestamp < fileTs or not self.loaded:
-            logging.warning(">>> Reload")
-            self.cfg_modified_timestamp = fileTs
-            self.read_configuration()
+        active_config_file = "cfg.active.yaml"
+        config_ts = os.path.getmtime(self.configuration_file)
+        active_ts = os.path.getmtime(active_config_file) if os.path.exists(active_config_file) else 0
+        
+        # Use the most recent configuration file
+        use_file = active_config_file if active_ts > config_ts else self.configuration_file
+        file_ts = max(config_ts, active_ts)
+        
+        if self.cfg_modified_timestamp < file_ts or not self.loaded:
+            logging.warning(f">>> Reload from {use_file}")
+            self.cfg_modified_timestamp = file_ts
+            
+            try:
+                with open(use_file) as f:
+                    self.mock_configuration = yaml.safe_load(f)
+            except IOError:
+                logging.error("Configuration file could not be found: %s", use_file)
+                self.mock_configuration = {}
+            
             self.loaded = True
             self.mock_toggle_state = self.mock_configuration.get("enable", False)
+            
+            # Only write active configuration if we loaded from the main config file
+            if use_file == self.configuration_file:
+                self.write_active_configuration()
+
+    def write_active_configuration(self):
+        # Extract line numbers for all rules from the original config file
+        rule_line_numbers = []
+        try:
+            with open(self.configuration_file, encoding="utf-8") as f:
+                raw_content = f.read()
+            root = yaml.compose(raw_content)
+            if root:
+                for key_node, value_node in root.value:
+                    if key_node.value == "rules" and value_node.value:
+                        for item_node in value_node.value:
+                            rule_line_numbers.append(item_node.start_mark.line + 1)
+        except Exception as e:
+            logging.warning("Could not extract line numbers: %s", e)
+        
+        all_active_rules = [rule for rule in self.mock_configuration.get("rules", []) if rule.get("active", False)]
+        priority_rules = [rule for rule in all_active_rules if rule.get("priority", True)]
+        low_priority_rules = [rule for rule in all_active_rules if not rule.get("priority", True)]
+        
+        active_config = {k: v for k, v in self.mock_configuration.items() if k != "rules"}
+        active_config["rules"] = priority_rules + low_priority_rules
+        
+        try:
+            content = yaml.dump(active_config, allow_unicode=True, default_flow_style=False, sort_keys=False)
+            content = re.sub(r'\n(- )', r'\n\n\1', content)
+            
+            # Map active rules to their original line numbers and add separator
+            lines = content.split('\n')
+            all_rules = self.mock_configuration.get("rules", [])
+            result_lines = []
+            active_idx = 0
+            priority_count = len(priority_rules)
+            
+            for line in lines:
+                if line.startswith('- '):
+                    # Add separator before first low-priority rule
+                    if active_idx == priority_count and low_priority_rules:
+                        result_lines.append('# ' + '-' * 77)
+                    
+                    if active_idx < len(all_active_rules):
+                        current_active_rule = all_active_rules[active_idx]
+                        for rule_idx, orig_rule in enumerate(all_rules):
+                            if orig_rule is current_active_rule and rule_idx < len(rule_line_numbers):
+                                result_lines.append(f"# cfg.yaml:{rule_line_numbers[rule_idx]}")
+                                break
+                        active_idx += 1
+                result_lines.append(line)
+            
+            with open("cfg.active.yaml", "w", encoding="utf-8") as f:
+                f.write('\n'.join(result_lines))
+        except IOError:
+            logging.error("Could not write cfg.active.yaml")
+
 
     def interceptor(self, flow):
         if self.hard_disable_switch.get(flow.request.url):
