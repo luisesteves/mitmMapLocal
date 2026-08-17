@@ -209,7 +209,7 @@ class MockResponse:
     def __init__(self):
         self.signal = "start"
         self.bad_network_delay = 0
-        self.response_sequence_index = 0
+        self.response_sequence_index = {}
 
         self.response_order_toggle = False
         self.response_order = 0
@@ -270,6 +270,8 @@ class MockResponse:
             # Only write active configuration if we loaded from the main config file
             if use_file == self.configuration_file:
                 self.write_active_configuration()
+
+            self.response_sequence_index = {}
 
     def write_active_configuration(self):
         # Extract line numbers for all rules from the original config file
@@ -584,14 +586,14 @@ class MockResponse:
                     flow.response.headers[header[self.KEY_NEW_KEY]] = value
 
             if self.KEY_FILE_SEQUENCE in response_actions:
-                file = response_actions[self.KEY_FILE_SEQUENCE][self.response_sequence_index]
+                files = response_actions[self.KEY_FILE_SEQUENCE]
+                url = flow.request.url
+                idx = self.response_sequence_index.get(url, 0)
+                file = files[idx]
                 flow.request.headers[self.response_from_file_header] = file
                 flow.response.headers[self.response_from_file_header] = file
                 flow.response.content = str.encode(read_file(file))
-                if self.response_sequence_index == len(response_actions[self.KEY_FILE_SEQUENCE]) - 1:
-                    self.response_sequence_index = 0
-                else:
-                    self.response_sequence_index += 1
+                self.response_sequence_index[url] = (idx + 1) % len(files)
 
             if self.KEY_FILE_RANDOM in response_actions:
                 randomIndex = random.randint(0, len(response_actions[self.KEY_FILE_RANDOM]) - 1)
